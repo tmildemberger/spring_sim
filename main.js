@@ -434,8 +434,6 @@ function resize_things() {
 
   height = 10 * height / width;
   width = 10;
-
-  // console.log('resizing');
 }
 
 resize_things();
@@ -481,9 +479,6 @@ class Vector2 {
   copy() {
     return new Vector2(this.x, this.y);
   }
-  // reverse_y() {
-  //   this.y = -this.y;
-  // }
 
   static add(v1, v2) {
     return vec2(v1.x + v2.x, v1.y + v2.y);
@@ -513,7 +508,6 @@ let elements = new Map();
 
 let selectedElement = null;
 let offset;
-let transform;
 
 function getMousePosition(event) {
   let ctm = svg.getScreenCTM();
@@ -531,35 +525,17 @@ function startDrag(event) {
     let obj = elements.get(selectedElement);
     offset.x -= obj.x;
     offset.y -= obj.y;
-
-    // let transforms = selectedElement.transform.baseVal;
-
-    // if (transforms.length === 0 ||
-    //   transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-    //   let translate = svg.createSVGTransform();
-    //   translate.setTranslate(0, 0);
-
-    //   selectedElement.transform.baseVal.insertItemBefore(translate, 0);
-    // }
-
-    // transform = transforms.getItem(0);
-
-    // offset.x -= transform.matrix.e;
-    // offset.y -= transform.matrix.f;
   }
 }
 
 function drag(event) {
   if (selectedElement) {
     event.preventDefault();
-    // let x = parseFloat(selectedElement.getAttribute('x'));
-    // selectedElement.setAttribute('x', x + 0.1);
     let coord = getMousePosition(event);
 
     let obj = elements.get(selectedElement);
     obj.x = coord.x - offset.x;
     obj.y = coord.y - offset.y;
-    // transform.setTranslate(coord.x - offset.x, coord.y - offset.y);
   }
 }
 
@@ -570,7 +546,6 @@ function endDrag(event) {
 svg.addEventListener('mousedown', startDrag, false);
 document.addEventListener('mousemove', drag, false);
 document.addEventListener('mouseup', endDrag, false);
-// svg.addEventListener('mouseleave', endDrag, false);
 
 class Box {
   constructor(pos, size, mass, vel, color) {
@@ -586,6 +561,8 @@ class Box {
     this.mass = mass;
     this.vel = vel.copy();
     this.acc = vec2(0, 0);
+
+    this.listeners = [];
 
     this.el = document.createElementNS(nssvg, 'rect');
     this.el.setAttribute('x', this.pos.x - this.size.x / 2);
@@ -623,6 +600,9 @@ class Box {
       c.constrain(this);
     }
     this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    for (let l of this.listeners) {
+      l();
+    }
   }
 
   set y(y) {
@@ -631,6 +611,9 @@ class Box {
       c.constrain(this);
     }
     this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+    for (let l of this.listeners) {
+      l();
+    }
   }
 
   get left() {
@@ -643,8 +626,9 @@ class Box {
 
   calculate(dt) {
     if (selectedElement === this.el) {
-      this.vel = vec2(0, 0);
-      this.acc = vec2(0, 0);
+      this.new_pos = this.pos;
+      this.new_vel = this.vel = vec2(0, 0);
+      this.new_acc = this.acc = vec2(0, 0);
       return;
     }
     this.new_pos = Vector2.add(this.pos, Vector2.scale(dt, this.vel));
@@ -659,34 +643,38 @@ class Box {
   }
 
   update(dt) {
-    // this.pos.add(Vector2.scale(dt, this.vel));
-    // if (this === box1) {
-    //   console.log(`dy = ${this.new_pos.y - this.pos.y}, dvy = ${this.new_vel.y - this.vel.y}`);
-    // }
-    this.pos = this.new_pos;
-    if (this.y === 0.5)
-      if (this === box1) { console.log(`soltando ${box1.pos.y}`); t1 = performance.now(); }
     this.vel = this.new_vel;
     this.acc = this.new_acc;
-    for (let c of this.constraints) {
-      c.constrain(this);
-    }
-    this.redraw();
+    this.x = this.new_pos.x;
+    this.y = this.new_pos.y;
+    // for (let c of this.constraints) {
+    //   c.constrain(this);
+    // }
+    // this.redraw();
   }
 
-  redraw() {
-    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-  }
+  // redraw() {
+  //   this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+  //   this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+  // }
 }
 
 class Spring {
   constructor(left, right, k, color, len) {
     this.left = left;
+    this.left.listeners.push(this.update.bind(this));
     this.right = right;
+    this.right.listeners.push(this.update.bind(this));
+
     this.k = k;
     this.color = color;
     this.len = (len ? len : this.distance);
+
+    this.el = document.createElementNS(nssvg, 'path');
+    this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
+    this.el.setAttribute('stroke-width', '0.1');
+    this.el.setAttribute('stroke', this.color);
+    svg.appendChild(this.el);
   }
 
   get distance() {
@@ -695,7 +683,7 @@ class Spring {
 
   get angle() {
     let v = Vector2.subtract(this.right.left, this.left.right);
-    v.reverse_y();
+    // v.reverse_y();
     return Math.atan2(v.y, v.x);
   }
 
@@ -708,14 +696,14 @@ class Spring {
     // console.log(this.left.right.y);
     // console.log(this.right.left.y);
     // console.log(this.left.right.x - this.right.left.x);
-    if (obj == this.right) {
-      // console.log('the thing im printing is:');
-      // console.log(f_);
+    // if (obj == this.right) {
+    // console.log('the thing im printing is:');
+    // console.log(f_);
 
-    }
+    // }
     let f = Vector2.rotate(f_, -this.angle + (obj === this.right ? Math.PI : 0));
     // f.reverse_y();
-    if (obj === triste && imprimi-- > 0) console.log(f);
+    // if (obj === triste && imprimi-- > 0) console.log(f);
     return f;
   }
 
@@ -724,16 +712,16 @@ class Spring {
   }
 
   update(dt) {
-    // do nothing
+    this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
   }
 
-  draw() {
-    ctx.strokeStyle = this.color;
-    ctx.beginPath();
-    ctx.moveTo(this.left.right.x, this.left.right.y);
-    ctx.lineTo(this.right.left.x, this.right.left.y);
-    ctx.stroke();
-  }
+  // draw() {
+  //   ctx.strokeStyle = this.color;
+  //   ctx.beginPath();
+  //   ctx.moveTo(this.left.right.x, this.left.right.y);
+  //   ctx.lineTo(this.right.left.x, this.right.left.y);
+  //   ctx.stroke();
+  // }
 }
 
 let gravityField = {
@@ -753,6 +741,8 @@ let horizontalConstraint = {
     if (obj.y !== obj.init_y) {
       obj.y = obj.init_y;
     }
+    obj.vel.y = 0;
+    obj.acc.y = 0;
   }
 }
 let verticalConstraint = {
@@ -760,48 +750,31 @@ let verticalConstraint = {
     if (obj.x !== obj.init_x) {
       obj.x = obj.init_x;
     }
+    obj.vel.x = 0;
+    obj.acc.x = 0;
   }
 }
-let t1;
-let t2;
-
 let insideBox = {
   constrain: function (obj) {
-    if (obj.pos.x - obj.size.x / 2 < 0 || obj.pos.x + obj.size.x / 2 > width) {
-      // if (obj === box1 && Math.abs(obj.vel.x) > 12) { console.log(obj.vel); t2 = performance.now(); }
-      obj.vel.x = 0;
-    }
-    if (obj.pos.y - obj.size.y / 2 < 0 || obj.pos.y + obj.size.y / 2 > height) {
-      if (obj === box1 && Math.abs(obj.vel.y) > 12) { console.log(obj.vel); t2 = performance.now(); }
-      obj.vel.y = 0;
-    }
-
-    // if (obj === box1) {
-    //   if (obj.pos.x - obj.size.x / 2 < 0) { obj.pos.x = obj.size.x / 2; console.log('esq'); }
-    //   if (obj.pos.x + obj.size.x / 2 > width) { obj.pos.x = width - obj.size.x / 2; console.log('dir'); }
-    //   if (obj.pos.y - obj.size.y / 2 < 0) { obj.pos.y = obj.size.y / 2; console.log('bot'); }
-    //   if (obj.pos.y + obj.size.y / 2 > height) { obj.pos.y = height - obj.size.y / 2; console.log('top'); }
-    // } else {
     if (obj.pos.x - obj.size.x / 2 < 0) obj.pos.x = obj.size.x / 2;
     if (obj.pos.x + obj.size.x / 2 > width) obj.pos.x = width - obj.size.x / 2;
     if (obj.pos.y - obj.size.y / 2 < 0) obj.pos.y = obj.size.y / 2;
     if (obj.pos.y + obj.size.y / 2 > height) obj.pos.y = height - obj.size.y / 2;
-    // }
   }
 }
 
-let box1 = new Box(vec2(2, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+let box1 = new Box(vec2(4, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 
 box1.forces.push(gravityField);
-box1.forces.push(windyField);
+// box1.forces.push(windyField);
 
 box2.forces.push(gravityField);
-box2.forces.push(windyField);
+// box2.forces.push(windyField);
 
 box1.constraints.push(insideBox);
-// box1.constraints.push(horizontalConstraint);
-box1.constraints.push(verticalConstraint);
+box1.constraints.push(horizontalConstraint);
+// box1.constraints.push(verticalConstraint);
 
 box2.constraints.push(insideBox);
 box2.constraints.push(horizontalConstraint);
@@ -809,6 +782,16 @@ box2.constraints.push(horizontalConstraint);
 
 objs.push(box1);
 objs.push(box2);
+
+function connectWithSpring(obj1, obj2, k, color, len) {
+  let s = new Spring(obj1, obj2, k, color, len);
+  obj1.forces.push(s);
+  obj2.forces.push(s);
+  return s;
+}
+
+let s1 = connectWithSpring(box1, box2, 10, 'yellow');
+objs.push(s1);
 
 let timePerFrame = 1 / 60 * 1000;
 let timeSinceLastUpdate = 0;

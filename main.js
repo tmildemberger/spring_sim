@@ -564,7 +564,6 @@ function drag(event) {
 }
 
 function endDrag(event) {
-  if (elements.get(selectedElement) === box1) {console.log(`soltando ${box1.pos.y}`); t1 = performance.now();}
   selectedElement = null;
 }
 
@@ -661,7 +660,12 @@ class Box {
 
   update(dt) {
     // this.pos.add(Vector2.scale(dt, this.vel));
+    // if (this === box1) {
+    //   console.log(`dy = ${this.new_pos.y - this.pos.y}, dvy = ${this.new_vel.y - this.vel.y}`);
+    // }
     this.pos = this.new_pos;
+    if (this.y === 0.5)
+      if (this === box1) { console.log(`soltando ${box1.pos.y}`); t1 = performance.now(); }
     this.vel = this.new_vel;
     this.acc = this.new_acc;
     for (let c of this.constraints) {
@@ -763,16 +767,26 @@ let t2;
 
 let insideBox = {
   constrain: function (obj) {
-    if (obj.pos.x - obj.size.x / 2 < 0 || obj.pos.x + obj.size.x / 2 > width ||
-      obj.pos.y - obj.size.y / 2 < 0 || obj.pos.y + obj.size.y / 2 > height) {
-      if (obj === box1 && obj.vel.length() > 2) {console.log(obj.vel); t2 = performance.now();}
-      obj.vel = vec2(0, 0);
+    if (obj.pos.x - obj.size.x / 2 < 0 || obj.pos.x + obj.size.x / 2 > width) {
+      // if (obj === box1 && Math.abs(obj.vel.x) > 12) { console.log(obj.vel); t2 = performance.now(); }
+      obj.vel.x = 0;
+    }
+    if (obj.pos.y - obj.size.y / 2 < 0 || obj.pos.y + obj.size.y / 2 > height) {
+      if (obj === box1 && Math.abs(obj.vel.y) > 12) { console.log(obj.vel); t2 = performance.now(); }
+      obj.vel.y = 0;
     }
 
+    // if (obj === box1) {
+    //   if (obj.pos.x - obj.size.x / 2 < 0) { obj.pos.x = obj.size.x / 2; console.log('esq'); }
+    //   if (obj.pos.x + obj.size.x / 2 > width) { obj.pos.x = width - obj.size.x / 2; console.log('dir'); }
+    //   if (obj.pos.y - obj.size.y / 2 < 0) { obj.pos.y = obj.size.y / 2; console.log('bot'); }
+    //   if (obj.pos.y + obj.size.y / 2 > height) { obj.pos.y = height - obj.size.y / 2; console.log('top'); }
+    // } else {
     if (obj.pos.x - obj.size.x / 2 < 0) obj.pos.x = obj.size.x / 2;
     if (obj.pos.x + obj.size.x / 2 > width) obj.pos.x = width - obj.size.x / 2;
     if (obj.pos.y - obj.size.y / 2 < 0) obj.pos.y = obj.size.y / 2;
     if (obj.pos.y + obj.size.y / 2 > height) obj.pos.y = height - obj.size.y / 2;
+    // }
   }
 }
 
@@ -806,10 +820,12 @@ let lastTime = performance.now();
 // triste = sim3.objs[1];
 
 function loop() {
-  elapsedTime = performance.now() - lastTime;
-  lastTime = performance.now();
+  let timenow = performance.now();
+  elapsedTime = timenow - lastTime;
+  lastTime = timenow;
   if (running) {
     timeSinceLastUpdate += elapsedTime;
+    // let t3 = performance.now();
     while (timeSinceLastUpdate >= timePerFrame) {
       timeSinceLastUpdate -= timePerFrame;
       for (const o of objs) {
@@ -818,8 +834,12 @@ function loop() {
       for (const o of objs) {
         o.update(timePerFrame / 1000);
       }
+      // let t5 = performance.now();
+      // t5_t4 = t5 - t4;
       // sim3.update(timePerFrame / 1000);
     }
+    // let t4 = performance.now();
+    // t4_t3 = t4 - t3;
 
     // ctx.fillStyle = 'rgb(0, 0, 0, 0.35)';
     // ctx.fillRect(0, 0, width, height);

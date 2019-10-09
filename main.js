@@ -434,10 +434,12 @@ function resize_things() {
 
   height = 10 * height / width;
   width = 10;
+
+  // console.log('resizing');
 }
 
 resize_things();
-document.addEventListener('resize', resize_things);
+document.defaultView.addEventListener('resize', resize_things);
 
 let nssvg = 'http://www.w3.org/2000/svg'
 
@@ -562,6 +564,7 @@ function drag(event) {
 }
 
 function endDrag(event) {
+  if (elements.get(selectedElement) === box1) {console.log(`soltando ${box1.pos.y}`); t1 = performance.now();}
   selectedElement = null;
 }
 
@@ -640,21 +643,27 @@ class Box {
   }
 
   calculate(dt) {
-    let net_force = vec2(0, 0);
     if (selectedElement === this.el) {
       this.vel = vec2(0, 0);
       this.acc = vec2(0, 0);
       return;
     }
+    this.new_pos = Vector2.add(this.pos, Vector2.scale(dt, this.vel));
+    this.new_pos.add(Vector2.scale(dt * dt / 2, this.acc));
+    let net_force = vec2(0, 0);
     for (let f of this.forces) {
       net_force.add(f.force(this));
     }
-    this.acc = Vector2.scale(1 / this.mass, net_force);
-    this.vel.add(Vector2.scale(dt, this.acc));
+    this.new_acc = Vector2.scale(1 / this.mass, net_force);
+    this.new_vel = Vector2.add(this.vel, Vector2.scale(dt / 2,
+      Vector2.add(this.acc, this.new_acc)));
   }
 
   update(dt) {
-    this.pos.add(Vector2.scale(dt, this.vel));
+    // this.pos.add(Vector2.scale(dt, this.vel));
+    this.pos = this.new_pos;
+    this.vel = this.new_vel;
+    this.acc = this.new_acc;
     for (let c of this.constraints) {
       c.constrain(this);
     }
@@ -749,16 +758,21 @@ let verticalConstraint = {
     }
   }
 }
+let t1;
+let t2;
+
 let insideBox = {
   constrain: function (obj) {
+    if (obj.pos.x - obj.size.x / 2 < 0 || obj.pos.x + obj.size.x / 2 > width ||
+      obj.pos.y - obj.size.y / 2 < 0 || obj.pos.y + obj.size.y / 2 > height) {
+      if (obj === box1 && obj.vel.length() > 2) {console.log(obj.vel); t2 = performance.now();}
+      obj.vel = vec2(0, 0);
+    }
+
     if (obj.pos.x - obj.size.x / 2 < 0) obj.pos.x = obj.size.x / 2;
     if (obj.pos.x + obj.size.x / 2 > width) obj.pos.x = width - obj.size.x / 2;
     if (obj.pos.y - obj.size.y / 2 < 0) obj.pos.y = obj.size.y / 2;
     if (obj.pos.y + obj.size.y / 2 > height) obj.pos.y = height - obj.size.y / 2;
-
-    if (obj.pos.x - obj.size.x / 2 < 0 || obj.pos.x + obj.size.x / 2 > width ||
-      obj.pos.y - obj.size.y / 2 < 0 || obj.pos.y + obj.size.y / 2 > height)
-      obj.vel = vec2(0, 0);
   }
 }
 

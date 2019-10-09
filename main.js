@@ -562,7 +562,7 @@ class Box {
     this.vel = vel.copy();
     this.acc = vec2(0, 0);
 
-    this.listeners = [];
+    this.listeners = []; this.lastPos = vec2(0, 0);
 
     this.el = document.createElementNS(nssvg, 'rect');
     this.el.setAttribute('x', this.pos.x - this.size.x / 2);
@@ -626,37 +626,27 @@ class Box {
 
   calculate(dt) {
     if (selectedElement === this.el) {
-      this.new_pos = this.pos;
-      this.new_vel = this.vel = vec2(0, 0);
-      this.new_acc = this.acc = vec2(0, 0);
+      this.vel = vec2(0, 0);
+      this.acc = vec2(0, 0);
       return;
     }
-    this.new_pos = Vector2.add(this.pos, Vector2.scale(dt, this.vel));
-    this.new_pos.add(Vector2.scale(dt * dt / 2, this.acc));
     let net_force = vec2(0, 0);
     for (let f of this.forces) {
       net_force.add(f.force(this));
     }
-    this.new_acc = Vector2.scale(1 / this.mass, net_force);
-    this.new_vel = Vector2.add(this.vel, Vector2.scale(dt / 2,
-      Vector2.add(this.acc, this.new_acc)));
+    this.acc = Vector2.scale(1 / this.mass, net_force);
+    this.vel.add(Vector2.scale(dt, this.acc));
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
   }
 
   update(dt) {
-    this.vel = this.new_vel;
-    this.acc = this.new_acc;
-    this.x = this.new_pos.x;
-    this.y = this.new_pos.y;
-    // for (let c of this.constraints) {
-    //   c.constrain(this);
-    // }
-    // this.redraw();
+    this.x += dt * this.vel.x;
+    this.y += dt * this.vel.y;
+    this.realVel = Vector2.scale(1 / dt, vec2(this.pos.x - this.lastPos.x, this.pos.y - this.lastPos.y));
+    this.lastPos = vec2(this.pos.x, this.pos.y);
   }
-
-  // redraw() {
-  //   this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-  //   this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-  // }
 }
 
 class Spring {
@@ -763,7 +753,7 @@ let insideBox = {
   }
 }
 
-let box1 = new Box(vec2(4, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+let box1 = new Box(vec2(3, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 
 box1.forces.push(gravityField);
@@ -778,7 +768,7 @@ box1.constraints.push(horizontalConstraint);
 
 box2.constraints.push(insideBox);
 box2.constraints.push(horizontalConstraint);
-// box2.constraints.push(verticalConstraint);
+box2.constraints.push(verticalConstraint);
 
 objs.push(box1);
 objs.push(box2);
@@ -790,7 +780,7 @@ function connectWithSpring(obj1, obj2, k, color, len) {
   return s;
 }
 
-let s1 = connectWithSpring(box1, box2, 10, 'yellow');
+let s1 = connectWithSpring(box1, box2, 200, 'yellow');
 objs.push(s1);
 
 let timePerFrame = 1 / 60 * 1000;
@@ -801,6 +791,8 @@ let lastTime = performance.now();
 // let sim3 = new Simulation(2, 500);
 
 // triste = sim3.objs[1];
+
+let zeroes = [0];
 
 function loop() {
   let timenow = performance.now();
@@ -816,6 +808,10 @@ function loop() {
       }
       for (const o of objs) {
         o.update(timePerFrame / 1000);
+      }
+      if (Math.abs(box1.realVel.x) < 0.1 && box1.realVel.x != 0) {
+        console.log('ta parado');
+        zeroes[zeroes.length] = [performance.now() / 1000, box1.pos.x];
       }
       // let t5 = performance.now();
       // t5_t4 = t5 - t4;

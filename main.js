@@ -429,9 +429,9 @@ let height;
 function resize_things() {
   width = window.innerWidth;
   height = window.innerHeight;
-  
+
   svg.setAttribute('viewBox', `0 0 10 ${10 * height / width}`);
-  
+
   height = 10 * height / width;
   width = 10;
 }
@@ -476,6 +476,9 @@ class Vector2 {
     this.y = temp.x * Math.sin(angle) + temp.y * Math.cos(angle);
   }
 
+  copy() {
+    return new Vector2(this.x, this.y);
+  }
   // reverse_y() {
   //   this.y = -this.y;
   // }
@@ -507,15 +510,18 @@ function vec2(x, y) {
 let elements = new Map();
 
 class Box {
-  constructor(pos, size, color) {
-    this.pos = pos;
-    this.size = size;
+  constructor(pos, size, mass, vel, color) {
+    this.inital_position = pos.copy();
+    this.inital_velocity = vel.copy();
+
+    this.pos = pos.copy();
+    this.size = size.copy();
     this.color = color;
 
     this.forces = [];
     this.constraints = [];
     this.mass = mass;
-    this.vel = vel;
+    this.vel = vel.copy();
     this.acc = vec2(0, 0);
 
     this.el = document.createElementNS(nssvg, 'rect');
@@ -567,17 +573,18 @@ class Box {
     }
     this.acc = Vector2.scale(1 / this.mass, net_force);
     this.vel.add(Vector2.scale(dt, this.acc));
-    for (let c of this.constraints) {
-      c.constrain(this);
-    }
   }
 
   update(dt) {
     this.pos.add(Vector2.scale(dt, this.vel));
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
   }
 }
 
-let box2 = new Box({ x: 7.5, y: .4 * height }, { x: 3, y: 4 }, "#007bff");
+let box1 = new Box(vec2(2, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 
 let selectedElement = null;
 let offset;

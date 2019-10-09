@@ -604,7 +604,7 @@ class Box {
   }
 
   get y() {
-    return -this.pos.y;
+    return height - this.pos.y;
   }
 
   get init_x() {
@@ -612,7 +612,7 @@ class Box {
   }
 
   get init_y() {
-    return -this.initial_position.y;
+    return height - this.initial_position.y;
   }
 
   set x(x) {
@@ -624,7 +624,7 @@ class Box {
   }
 
   set y(y) {
-    this.pos.y = -y;
+    this.pos.y = height - y;
     for (let c of this.constraints) {
       c.constrain(this);
     }
@@ -755,6 +755,10 @@ let insideBox = {
     if (obj.pos.x + obj.size.x / 2 > width) obj.pos.x = width - obj.size.x / 2;
     if (obj.pos.y - obj.size.y / 2 < 0) obj.pos.y = obj.size.y / 2;
     if (obj.pos.y + obj.size.y / 2 > height) obj.pos.y = height - obj.size.y / 2;
+
+    if (obj.pos.x - obj.size.x / 2 < 0 || obj.pos.x + obj.size.x / 2 > width ||
+      obj.pos.y - obj.size.y / 2 < 0 || obj.pos.y + obj.size.y / 2 > height)
+      obj.vel = vec2(0, 0);
   }
 }
 

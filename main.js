@@ -11,7 +11,7 @@
 //   return num;
 // }
 
-// let objs = [];
+let objs = [];
 
 // class Vector2 {
 //   constructor(x, y) {
@@ -277,8 +277,8 @@
 // // let s2 = connectWithSpring(left_border, testBox, 300, 'yellow');
 // // let s3 = connectWithSpring(testBox2, right_border, 300, 'yellow');
 
-// let running = true;
-// let again = true;
+let running = true;
+let again = true;
 
 // // objs.push(left_border);
 // // objs.push(right_border);
@@ -509,83 +509,6 @@ function vec2(x, y) {
 
 let elements = new Map();
 
-class Box {
-  constructor(pos, size, mass, vel, color) {
-    this.inital_position = pos.copy();
-    this.inital_velocity = vel.copy();
-
-    this.pos = pos.copy();
-    this.size = size.copy();
-    this.color = color;
-
-    this.forces = [];
-    this.constraints = [];
-    this.mass = mass;
-    this.vel = vel.copy();
-    this.acc = vec2(0, 0);
-
-    this.el = document.createElementNS(nssvg, 'rect');
-    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-    this.el.setAttribute('width', this.size.x);
-    this.el.setAttribute('height', this.size.y);
-    this.el.setAttribute('fill', this.color)
-
-    this.el.classList.add('draggable');
-
-    elements.set(this.el, this);
-
-    svg.appendChild(this.el);
-  }
-
-  get x() {
-    return this.pos.x;
-  }
-
-  get y() {
-    return -this.pos.y;
-  }
-
-  set x(x) {
-    this.pos.x = x;
-    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-  }
-
-  set y(y) {
-    this.pos.y = -y;
-    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-  }
-
-  get left() {
-    return vec2(this.pos.x - this.size.x / 2, this.pos.y);
-  }
-
-  get right() {
-    return vec2(this.pos.x + this.size.x / 2, this.pos.y);
-  }
-
-  calculate(dt) {
-    let net_force = vec2(0, 0);
-    for (let f of this.forces) {
-      net_force.add(f.force(this));
-    }
-    this.acc = Vector2.scale(1 / this.mass, net_force);
-    this.vel.add(Vector2.scale(dt, this.acc));
-  }
-
-  update(dt) {
-    this.pos.add(Vector2.scale(dt, this.vel));
-    for (let c of this.constraints) {
-      c.constrain(this);
-    }
-  }
-}
-
-let box1 = new Box(vec2(2, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
-let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
-
 let selectedElement = null;
 let offset;
 let transform;
@@ -643,6 +566,254 @@ function endDrag(event) {
 }
 
 svg.addEventListener('mousedown', startDrag, false);
-svg.addEventListener('mousemove', drag, false);
-svg.addEventListener('mouseup', endDrag, false);
+document.addEventListener('mousemove', drag, false);
+document.addEventListener('mouseup', endDrag, false);
 // svg.addEventListener('mouseleave', endDrag, false);
+
+class Box {
+  constructor(pos, size, mass, vel, color) {
+    this.initial_position = pos.copy();
+    this.initial_velocity = vel.copy();
+
+    this.pos = pos.copy();
+    this.size = size.copy();
+    this.color = color;
+
+    this.forces = [];
+    this.constraints = [];
+    this.mass = mass;
+    this.vel = vel.copy();
+    this.acc = vec2(0, 0);
+
+    this.el = document.createElementNS(nssvg, 'rect');
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+    this.el.setAttribute('width', this.size.x);
+    this.el.setAttribute('height', this.size.y);
+    this.el.setAttribute('fill', this.color)
+
+    this.el.classList.add('draggable');
+
+    elements.set(this.el, this);
+
+    svg.appendChild(this.el);
+  }
+
+  get x() {
+    return this.pos.x;
+  }
+
+  get y() {
+    return -this.pos.y;
+  }
+
+  get init_x() {
+    return this.initial_position.x;
+  }
+
+  get init_y() {
+    return -this.initial_position.y;
+  }
+
+  set x(x) {
+    this.pos.x = x;
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+  }
+
+  set y(y) {
+    this.pos.y = -y;
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+  }
+
+  get left() {
+    return vec2(this.pos.x - this.size.x / 2, this.pos.y);
+  }
+
+  get right() {
+    return vec2(this.pos.x + this.size.x / 2, this.pos.y);
+  }
+
+  calculate(dt) {
+    let net_force = vec2(0, 0);
+    if (selectedElement === this.el) {
+      this.vel = vec2(0, 0);
+      this.acc = vec2(0, 0);
+      return;
+    }
+    for (let f of this.forces) {
+      net_force.add(f.force(this));
+    }
+    this.acc = Vector2.scale(1 / this.mass, net_force);
+    this.vel.add(Vector2.scale(dt, this.acc));
+  }
+
+  update(dt) {
+    this.pos.add(Vector2.scale(dt, this.vel));
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
+    this.redraw();
+  }
+
+  redraw() {
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+  }
+}
+
+class Spring {
+  constructor(left, right, k, color, len) {
+    this.left = left;
+    this.right = right;
+    this.k = k;
+    this.color = color;
+    this.len = (len ? len : this.distance);
+  }
+
+  get distance() {
+    return Vector2.subtract(this.left.right, this.right.left).length();
+  }
+
+  get angle() {
+    let v = Vector2.subtract(this.right.left, this.left.right);
+    v.reverse_y();
+    return Math.atan2(v.y, v.x);
+  }
+
+  force(obj) {
+    if (obj !== this.left && obj !== this.right) {
+      console.log('this is not right (nor left haha)');
+      return vec2(0, 0);
+    }
+    let f_ = vec2(this.k * (this.distance - this.len), 0);
+    // console.log(this.left.right.y);
+    // console.log(this.right.left.y);
+    // console.log(this.left.right.x - this.right.left.x);
+    if (obj == this.right) {
+      // console.log('the thing im printing is:');
+      // console.log(f_);
+
+    }
+    let f = Vector2.rotate(f_, -this.angle + (obj === this.right ? Math.PI : 0));
+    // f.reverse_y();
+    if (obj === triste && imprimi-- > 0) console.log(f);
+    return f;
+  }
+
+  calculate(dt) {
+    // do nothing
+  }
+
+  update(dt) {
+    // do nothing
+  }
+
+  draw() {
+    ctx.strokeStyle = this.color;
+    ctx.beginPath();
+    ctx.moveTo(this.left.right.x, this.left.right.y);
+    ctx.lineTo(this.right.left.x, this.right.left.y);
+    ctx.stroke();
+  }
+}
+
+let gravityField = {
+  g: 9.8,
+  force: function (obj) {
+    return vec2(0, -obj.mass * this.g);
+  }
+}
+let windyField = {
+  f: 15,
+  force: function (obj) {
+    return vec2(obj.mass * this.f, 0);
+  }
+}
+let horizontalConstraint = {
+  constrain: function (obj) {
+    if (obj.y !== obj.init_y) {
+      obj.y = obj.init_y;
+    }
+  }
+}
+let verticalConstraint = {
+  constrain: function (obj) {
+    if (obj.x !== obj.init_x) {
+      obj.x = obj.init_x;
+    }
+  }
+}
+let insideBox = {
+  constrain: function (obj) {
+    if (obj.pos.x - obj.size.x / 2 < 0) obj.pos.x = obj.size.x / 2;
+    if (obj.pos.x + obj.size.x / 2 > width) obj.pos.x = width - obj.size.x / 2;
+    if (obj.pos.y - obj.size.y / 2 < 0) obj.pos.y = obj.size.y / 2;
+    if (obj.pos.y + obj.size.y / 2 > height) obj.pos.y = height - obj.size.y / 2;
+  }
+}
+
+let box1 = new Box(vec2(2, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+
+box1.forces.push(gravityField);
+box1.forces.push(windyField);
+
+box2.forces.push(gravityField);
+box2.forces.push(windyField);
+
+box1.constraints.push(insideBox);
+// box1.constraints.push(horizontalConstraint);
+box1.constraints.push(verticalConstraint);
+
+box2.constraints.push(insideBox);
+box2.constraints.push(horizontalConstraint);
+// box2.constraints.push(verticalConstraint);
+
+objs.push(box1);
+objs.push(box2);
+
+let timePerFrame = 1 / 60 * 1000;
+let timeSinceLastUpdate = 0;
+let elapsedTime = performance.now();
+let lastTime = performance.now();
+
+// let sim3 = new Simulation(2, 500);
+
+// triste = sim3.objs[1];
+
+function loop() {
+  elapsedTime = performance.now() - lastTime;
+  lastTime = performance.now();
+  if (running) {
+    timeSinceLastUpdate += elapsedTime;
+    while (timeSinceLastUpdate >= timePerFrame) {
+      timeSinceLastUpdate -= timePerFrame;
+      for (const o of objs) {
+        o.calculate(timePerFrame / 1000);
+      }
+      for (const o of objs) {
+        o.update(timePerFrame / 1000);
+      }
+      // sim3.update(timePerFrame / 1000);
+    }
+
+    // ctx.fillStyle = 'rgb(0, 0, 0, 0.35)';
+    // ctx.fillRect(0, 0, width, height);
+
+    // for (const o of objs) {
+    //   o.draw();
+    // }
+    // sim3.draw();
+  }
+  if (again) {
+    requestAnimationFrame(loop);
+  }
+}
+
+loop();

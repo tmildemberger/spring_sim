@@ -423,17 +423,161 @@
 // loop();
 const svg = document.getElementById('graphics');
 
-let width = window.innerWidth;
-let height = window.innerHeight;
+let width;
+let height;
 
-svg.setAttribute('viewBox', `0 0 10 ${10 * height / width}`);
+function resize_things() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  
+  svg.setAttribute('viewBox', `0 0 10 ${10 * height / width}`);
+  
+  height = 10 * height / width;
+  width = 10;
+}
 
-height = 10 * height / width;
-width = 10;
+resize_things();
+document.addEventListener('resize', resize_things);
 
-// svg.setAttribute('width', width);
-// svg.setAttribute('height', height);
-// svg.setAttribute('preserveAspectRatio', height);
+let nssvg = 'http://www.w3.org/2000/svg'
+
+class Vector2 {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  add(other) {
+    this.x += other.x;
+    this.y += other.y;
+  }
+
+  subtract(other) {
+    this.x -= other.x;
+    this.y -= other.y;
+  }
+
+  scale(alpha) {
+    this.x *= alpha;
+    this.y *= alpha;
+  }
+
+  length() {
+    return Math.sqrt(this.x * this.x + this.y * this.y);
+  }
+
+  angle() {
+    return Math.atan2(this.y, this.x);
+  }
+
+  rotate(angle) {
+    let temp = vec2(this.x, this.y);
+    this.x = temp.x * Math.cos(angle) - temp.y * Math.sin(angle);
+    this.y = temp.x * Math.sin(angle) + temp.y * Math.cos(angle);
+  }
+
+  // reverse_y() {
+  //   this.y = -this.y;
+  // }
+
+  static add(v1, v2) {
+    return vec2(v1.x + v2.x, v1.y + v2.y);
+  }
+
+  static subtract(v1, v2) {
+    return vec2(v1.x - v2.x, v1.y - v2.y);
+  }
+
+  static scale(alpha, v) {
+    return vec2(alpha * v.x, alpha * v.y);
+  }
+
+  static rotate(v, angle) {
+    let temp = vec2(v.x, v.y);
+    temp.x = v.x * Math.cos(angle) - v.y * Math.sin(angle);
+    temp.y = v.x * Math.sin(angle) + v.y * Math.cos(angle);
+    return temp;
+  }
+}
+
+function vec2(x, y) {
+  return new Vector2(x, y);
+}
+
+let elements = new Map();
+
+class Box {
+  constructor(pos, size, color) {
+    this.pos = pos;
+    this.size = size;
+    this.color = color;
+
+    this.forces = [];
+    this.constraints = [];
+    this.mass = mass;
+    this.vel = vel;
+    this.acc = vec2(0, 0);
+
+    this.el = document.createElementNS(nssvg, 'rect');
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+    this.el.setAttribute('width', this.size.x);
+    this.el.setAttribute('height', this.size.y);
+    this.el.setAttribute('fill', this.color)
+
+    this.el.classList.add('draggable');
+
+    elements.set(this.el, this);
+
+    svg.appendChild(this.el);
+  }
+
+  get x() {
+    return this.pos.x;
+  }
+
+  get y() {
+    return -this.pos.y;
+  }
+
+  set x(x) {
+    this.pos.x = x;
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+  }
+
+  set y(y) {
+    this.pos.y = -y;
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+  }
+
+  get left() {
+    return vec2(this.pos.x - this.size.x / 2, this.pos.y);
+  }
+
+  get right() {
+    return vec2(this.pos.x + this.size.x / 2, this.pos.y);
+  }
+
+  calculate(dt) {
+    let net_force = vec2(0, 0);
+    for (let f of this.forces) {
+      net_force.add(f.force(this));
+    }
+    this.acc = Vector2.scale(1 / this.mass, net_force);
+    this.vel.add(Vector2.scale(dt, this.acc));
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
+  }
+
+  update(dt) {
+    this.pos.add(Vector2.scale(dt, this.vel));
+  }
+}
+
+let box2 = new Box({ x: 7.5, y: .4 * height }, { x: 3, y: 4 }, "#007bff");
 
 let selectedElement = null;
 let offset;
@@ -452,20 +596,24 @@ function startDrag(event) {
     selectedElement = event.target;
     offset = getMousePosition(event);
 
-    let transforms = selectedElement.transform.baseVal;
+    let obj = elements.get(selectedElement);
+    offset.x -= obj.x;
+    offset.y -= obj.y;
 
-    if (transforms.length === 0 ||
-      transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-      let translate = svg.createSVGTransform();
-      translate.setTranslate(0, 0);
+    // let transforms = selectedElement.transform.baseVal;
 
-      selectedElement.transform.baseVal.insertItemBefore(translate, 0);
-    }
+    // if (transforms.length === 0 ||
+    //   transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+    //   let translate = svg.createSVGTransform();
+    //   translate.setTranslate(0, 0);
 
-    transform = transforms.getItem(0);
+    //   selectedElement.transform.baseVal.insertItemBefore(translate, 0);
+    // }
 
-    offset.x -= transform.matrix.e;
-    offset.y -= transform.matrix.f;
+    // transform = transforms.getItem(0);
+
+    // offset.x -= transform.matrix.e;
+    // offset.y -= transform.matrix.f;
   }
 }
 
@@ -475,7 +623,11 @@ function drag(event) {
     // let x = parseFloat(selectedElement.getAttribute('x'));
     // selectedElement.setAttribute('x', x + 0.1);
     let coord = getMousePosition(event);
-    transform.setTranslate(coord.x - offset.x, coord.y - offset.y);
+
+    let obj = elements.get(selectedElement);
+    obj.x = coord.x - offset.x;
+    obj.y = coord.y - offset.y;
+    // transform.setTranslate(coord.x - offset.x, coord.y - offset.y);
   }
 }
 
@@ -486,35 +638,4 @@ function endDrag(event) {
 svg.addEventListener('mousedown', startDrag, false);
 svg.addEventListener('mousemove', drag, false);
 svg.addEventListener('mouseup', endDrag, false);
-svg.addEventListener('mouseleave', endDrag, false);
-
-let nssvg = 'http://www.w3.org/2000/svg'
-
-// let box2 = document.createElementNS(nssvg, 'rect');
-// box2.setAttribute('width', '3');
-// box2.setAttribute('height', '4');
-// box2.setAttribute('x', '6');
-// box2.setAttribute('y', '2');
-// box2.setAttribute('fill', '#888');
-// box2.classList.add('draggable')
-// svg.appendChild(box2);
-
-class Box {
-  constructor(pos, size) {
-    this.pos = pos;
-    this.size = size;
-
-    this.el = document.createElementNS(nssvg, 'rect');
-    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-    this.el.setAttribute('width', this.size.x);
-    this.el.setAttribute('height', this.size.y);
-    this.el.setAttribute('fill', '#888')
-
-    this.el.classList.add('draggable');
-
-    svg.appendChild(this.el);
-  }
-}
-
-let box2 = new Box({x:7.5, y:.4 * height}, {x:3, y:4});
+// svg.addEventListener('mouseleave', endDrag, false);

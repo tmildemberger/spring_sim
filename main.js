@@ -567,6 +567,7 @@ class Box {
     this.el = document.createElementNS(nssvg, 'rect');
     this.el.setAttribute('x', this.pos.x - this.size.x / 2);
     this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+    this.el.setAttribute('z', '2');
     this.el.setAttribute('width', this.size.x);
     this.el.setAttribute('height', this.size.y);
     this.el.setAttribute('fill', this.color)
@@ -661,6 +662,7 @@ class Spring {
     this.len = (len ? len : this.distance);
 
     this.el = document.createElementNS(nssvg, 'path');
+    this.el.classList.add('spring');
     this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
     this.el.setAttribute('stroke-width', '0.1');
     this.el.setAttribute('stroke', this.color);
@@ -753,6 +755,14 @@ let insideBox = {
     if (obj.pos.y + obj.size.y / 2 > height) obj.pos.y = height - obj.size.y / 2;
   }
 }
+let pinnedConstraint = {
+  constrain: function (obj) {
+    obj.vel.x = 0;
+    obj.vel.y = 0;
+    obj.acc.x = 0;
+    obj.acc.y = 0;
+  }
+}
 
 // let box1 = new Box(vec2(3, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 // let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
@@ -799,7 +809,7 @@ class Simulation {
     this.n_masses = n_masses;
     this.y = y;
     this.objs = [];
-    this.k = 700;
+    this.k = 70000;
 
     let space_per_spring = (width - .4 - n_masses * this.mm) / (n_masses + 1);
     this.boxes = [];
@@ -809,31 +819,40 @@ class Simulation {
       // this.boxes[i].forces.push(gravityField);
       this.boxes[i].constraints.push(verticalConstraint);
       // this.boxes[i].constraints.push(horizontalConstraint);
-      this.boxes[i].constraints.push(insideBox);
+      // this.boxes[i].constraints.push(pinnedConstraint);
+      // this.boxes[i].constraints.push(insideBox);
       this.objs.push(this.boxes[i]);
     }
     let left_border = new Box(vec2(0, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
     left_border.constraints.push(verticalConstraint);
-    left_border.constraints.push(horizontalConstraint);
+    // left_border.constraints.push(horizontalConstraint);
+    left_border.constraints.push(pinnedConstraint);
     this.objs.push(left_border);
 
     let right_border = new Box(vec2(width, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
     right_border.constraints.push(verticalConstraint);
-    right_border.constraints.push(horizontalConstraint);
+    // right_border.constraints.push(horizontalConstraint);
+    right_border.constraints.push(pinnedConstraint);
     this.objs.push(right_border);
 
     let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', space_per_spring / 50);
-    let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', space_per_spring / 50);
+    // let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', space_per_spring / 50);
     this.springs = [];
     this.objs.push(s0);
-    this.objs.push(sN);
+    // this.objs.push(sN);
 
     this.springs[0] = s0;
     for (let i = 1; i < n_masses; ++i) {
       this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', space_per_spring / 50);
       this.objs.push(this.springs[i]);
     }
-    this.springs[this.springs.length] = sN;
+    // this.springs[this.springs.length] = sN;
+
+    for (let b of this.boxes) {
+      svg.appendChild(b.el);
+    }
+    svg.appendChild(left_border.el);
+    svg.appendChild(right_border.el);
   }
 
   update(dt) {
@@ -859,13 +878,15 @@ let lastTime = performance.now();
 
 let simulations = [];
 
-let sim3 = new Simulation(2, 3);
+let sim3 = new Simulation(16, 3);
 let sim4 = new Simulation(6, 6);
 let sim5 = new Simulation(4, 9);
 
 simulations.push(sim3);
 simulations.push(sim4);
 simulations.push(sim5);
+simulations.push(new Simulation(12, 12));
+simulations.push(new Simulation(55, 15));
 
 // triste = sim3.objs[1];
 

@@ -729,6 +729,14 @@ let windyField = {
     return vec2(obj.mass * this.f, 0);
   }
 }
+let fluidViscosity = function (visc) {
+  return {
+    gamma: visc,
+    force: function (obj) {
+      return Vector2.scale(-this.gamma, obj.vel);
+    }
+  }
+}
 let horizontalConstraint = {
   constrain: function (obj) {
     if (obj.y !== obj.init_y) {
@@ -804,11 +812,12 @@ function connectWithSpring(obj1, obj2, k, color, len) {
 // objs.push(s2);
 
 class Simulation {
-  constructor(n_masses, y, options, k, masses_mass) {
+  constructor(n_masses, y, options, k, masses_wid, viscosity) {
     this.n_masses = n_masses;
     this.y = y;
     this.k = k || 70000;
-    this.mm = masses_mass || .3;
+    this.mm = masses_wid || .3;
+    this.viscosity = viscosity || Math.sqrt(12 * this.k * 20 / 5);
 
     this.options = options || {};
     {
@@ -821,6 +830,8 @@ class Simulation {
         'right_enabled': true,
         'right_connected': true,
         'right_static': true,
+        'streched_springs': true,
+        'air_viscosity': false,
       }
       for (let opt in defaults) {
         if (this.options[opt] === undefined) this.options[opt] = defaults[opt];
@@ -837,6 +848,7 @@ class Simulation {
         vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
 
       if (this.options.gravity) this.boxes[i].forces.push(gravityField);
+      if (this.options.air_viscosity) this.boxes[i].forces.push(fluidViscosity(this.viscosity));
       if (this.options.type.includes('vertical')) this.boxes[i].constraints.push(verticalConstraint);
       if (this.options.type.includes('horizontal')) this.boxes[i].constraints.push(horizontalConstraint);
       if (this.options.type.includes('pinned')) this.boxes[i].constraints.push(pinnedConstraint);
@@ -846,7 +858,7 @@ class Simulation {
     this.springs = [];
 
     for (let i = 1; i < n_masses; ++i) {
-      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', space_per_spring / 50);
+      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
       this.objs.push(this.springs[i]);
       for (let b of this.boxes) {
         svg.appendChild(b.el);
@@ -861,7 +873,7 @@ class Simulation {
       this.objs.push(left_border);
 
       if (this.options.left_connected) {
-        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', space_per_spring / 50);
+        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
         this.objs.push(s0);
         this.springs[0] = s0;
       }
@@ -876,7 +888,7 @@ class Simulation {
       this.objs.push(right_border);
 
       if (this.options.right_connected) {
-        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', space_per_spring / 50);
+        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
         this.objs.push(sN);
         this.springs[this.springs.length] = sN;
       }
@@ -907,15 +919,17 @@ let lastTime = performance.now();
 
 let simulations = [];
 
-let sim3 = new Simulation(16, 3);
-let sim4 = new Simulation(6, 6);
+let sim3 = new Simulation(16, 15);
+let sim4 = new Simulation(6, 18);
 let sim5 = new Simulation(4, 9);
 
 simulations.push(sim3);
 simulations.push(sim4);
 simulations.push(sim5);
 simulations.push(new Simulation(12, 12));
-simulations.push(new Simulation(55, 15, { 'left_static': false }));
+// simulations.push(new Simulation(55, 3, { 'left_static': false, 'right_connected': false }));
+simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': false }, 200));
+simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200));
 
 // triste = sim3.objs[1];
 

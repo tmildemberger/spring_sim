@@ -817,7 +817,7 @@ class Simulation {
     this.y = y;
     this.k = k || 70000;
     this.mm = masses_wid || .3;
-    this.viscosity = viscosity || Math.sqrt(12 * this.k * 20 / 5);
+    this.viscosity = viscosity === undefined ? Math.sqrt(12 * this.k * 20 / 5) : viscosity;
 
     this.options = options || {};
     {
@@ -919,19 +919,33 @@ let lastTime = performance.now();
 
 let simulations = [];
 
-let sim3 = new Simulation(16, 15);
-let sim4 = new Simulation(6, 18);
-let sim5 = new Simulation(4, 9);
+// let sim3 = new Simulation(16, 15);
+// let sim4 = new Simulation(6, 18);
+// let sim5 = new Simulation(4, 9);
 
-simulations.push(sim3);
-simulations.push(sim4);
-simulations.push(sim5);
-simulations.push(new Simulation(12, 12));
-// simulations.push(new Simulation(55, 3, { 'left_static': false, 'right_connected': false }));
-simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': false }, 200));
-simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200));
+// simulations.push(sim3);
+// simulations.push(sim4);
+// simulations.push(sim5);
+// simulations.push(new Simulation(12, 12));
+simulations.push(new Simulation(55, 3, { 'left_static': false, 'right_connected': false }));
+// simulations.push(new Simulation(55, 6, { 'left_static': false, 'right_connected': false }));
+// simulations.push(new Simulation(55, 9, { 'left_static': false, 'right_connected': false }));
+// simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': false }, 20));
+// simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 10));
+// simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 20));
+// simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
+// simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-// triste = sim3.objs[1];
+// simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': false }, 200));
+// simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
+// simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));
+// simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 97));
+// simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 126));
+// simulations.push(new Simulation(1, 18, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 1260));
+// simulations.push(new Simulation(1, 21, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 10260));
+
+// simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 0));
+// simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20));
 
 let paused = document.createElementNS(nssvg, 'text');
 paused.setAttribute('x', '5');

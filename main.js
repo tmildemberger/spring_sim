@@ -643,7 +643,7 @@ class Box {
 
   update(dt) {
     this.x += dt * this.vel.x;
-    this.y += dt * this.vel.y;
+    this.y += -dt * this.vel.y;
     this.realVel = Vector2.scale(1 / dt, vec2(this.pos.x - this.lastPos.x, this.pos.y - this.lastPos.y));
     this.lastPos = vec2(this.pos.x, this.pos.y);
   }
@@ -691,9 +691,10 @@ class Spring {
     // console.log(f_);
 
     // }
-    let f = Vector2.rotate(f_, -this.angle + (obj === this.right ? Math.PI : 0));
+    let f = Vector2.rotate(f_, this.angle + (obj === this.right ? Math.PI : 0));
     // f.reverse_y();
     // if (obj === triste && imprimi-- > 0) console.log(f);
+    // if (obj === box2) console.log(f_);
     return f;
   }
 
@@ -753,25 +754,25 @@ let insideBox = {
   }
 }
 
-let box1 = new Box(vec2(3, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
-let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+// let box1 = new Box(vec2(3, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
+// let box2 = new Box(vec2(6, 2), vec2(1, 1), 20, vec2(0, 0), "#007bff");
 
-box1.forces.push(gravityField);
-// box1.forces.push(windyField);
+// // box1.forces.push(gravityField);
+// // box1.forces.push(windyField);
 
-box2.forces.push(gravityField);
-// box2.forces.push(windyField);
+// // box2.forces.push(gravityField);
+// // box2.forces.push(windyField);
 
-box1.constraints.push(insideBox);
-box1.constraints.push(horizontalConstraint);
-// box1.constraints.push(verticalConstraint);
+// box1.constraints.push(insideBox);
+// box1.constraints.push(horizontalConstraint);
+// // box1.constraints.push(verticalConstraint);
 
-box2.constraints.push(insideBox);
-box2.constraints.push(horizontalConstraint);
-box2.constraints.push(verticalConstraint);
+// box2.constraints.push(insideBox);
+// box2.constraints.push(horizontalConstraint);
+// // box2.constraints.push(verticalConstraint);
 
-objs.push(box1);
-objs.push(box2);
+// objs.push(box1);
+// objs.push(box2);
 
 function connectWithSpring(obj1, obj2, k, color, len) {
   let s = new Spring(obj1, obj2, k, color, len);
@@ -780,19 +781,93 @@ function connectWithSpring(obj1, obj2, k, color, len) {
   return s;
 }
 
-let s1 = connectWithSpring(box1, box2, 200, 'yellow');
-objs.push(s1);
+// let left_border = new Box(vec2(0, 2), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+// let right_border = new Box(vec2(10, 2), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+
+// let s1 = connectWithSpring(box1, box2, 200, 'yellow');
+// objs.push(s1);
+
+// let s0 = connectWithSpring(left_border, box1, 200, 'yellow');
+// objs.push(s0);
+
+// let s2 = connectWithSpring(box2, right_border, 200, 'yellow');
+// objs.push(s2);
+
+class Simulation {
+  constructor(n_masses, y) {
+    this.mm = .3;
+    this.n_masses = n_masses;
+    this.y = y;
+    this.objs = [];
+    this.k = 700;
+
+    let space_per_spring = (width - .4 - n_masses * this.mm) / (n_masses + 1);
+    this.boxes = [];
+    for (let i = 0; i < n_masses; ++i) {
+      this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1/2), this.y),
+        vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
+      // this.boxes[i].forces.push(gravityField);
+      this.boxes[i].constraints.push(verticalConstraint);
+      // this.boxes[i].constraints.push(horizontalConstraint);
+      this.boxes[i].constraints.push(insideBox);
+      this.objs.push(this.boxes[i]);
+    }
+    let left_border = new Box(vec2(0, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+    left_border.constraints.push(verticalConstraint);
+    left_border.constraints.push(horizontalConstraint);
+    this.objs.push(left_border);
+
+    let right_border = new Box(vec2(width, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+    right_border.constraints.push(verticalConstraint);
+    right_border.constraints.push(horizontalConstraint);
+    this.objs.push(right_border);
+
+    let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', space_per_spring / 50);
+    let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', space_per_spring / 50);
+    this.springs = [];
+    this.objs.push(s0);
+    this.objs.push(sN);
+    
+    this.springs[0] = s0;
+    for (let i = 1; i < n_masses; ++i) {
+      this.springs[i] = connectWithSpring(this.boxes[i-1], this.boxes[i], this.k, 'yellow', space_per_spring / 50);
+      this.objs.push(this.springs[i]);
+    }
+    this.springs[this.springs.length] = sN;
+  }
+
+  update(dt) {
+    for (const o of this.objs) {
+      o.calculate(dt);
+    }
+    for (const o of this.objs) {
+      o.update(dt);
+    }
+  }
+
+  // draw() {
+  //   for (const o of this.objs) {
+  //     o.draw();
+  //   }
+  // }
+}
 
 let timePerFrame = 1 / 60 * 1000;
 let timeSinceLastUpdate = 0;
 let elapsedTime = performance.now();
 let lastTime = performance.now();
 
-// let sim3 = new Simulation(2, 500);
+let simulations = [];
+
+let sim3 = new Simulation(2, 3);
+let sim4 = new Simulation(6, 6);
+let sim5 = new Simulation(4, 9);
+
+simulations.push(sim3);
+simulations.push(sim4);
+simulations.push(sim5);
 
 // triste = sim3.objs[1];
-
-let zeroes = [0];
 
 function loop() {
   let timenow = performance.now();
@@ -803,19 +878,18 @@ function loop() {
     // let t3 = performance.now();
     while (timeSinceLastUpdate >= timePerFrame) {
       timeSinceLastUpdate -= timePerFrame;
-      for (const o of objs) {
-        o.calculate(timePerFrame / 1000);
-      }
-      for (const o of objs) {
-        o.update(timePerFrame / 1000);
-      }
-      if (Math.abs(box1.realVel.x) < 0.1 && box1.realVel.x != 0) {
-        console.log('ta parado');
-        zeroes[zeroes.length] = [performance.now() / 1000, box1.pos.x];
-      }
+      // for (const o of objs) {
+      //   o.calculate(timePerFrame / 1000);
+      // }
+      // for (const o of objs) {
+      //   o.update(timePerFrame / 1000);
+      // }
       // let t5 = performance.now();
       // t5_t4 = t5 - t4;
       // sim3.update(timePerFrame / 1000);
+      for (let s of simulations) {
+        s.update(timePerFrame / 1000);
+      }
     }
     // let t4 = performance.now();
     // t4_t3 = t4 - t3;

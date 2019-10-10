@@ -804,55 +804,84 @@ function connectWithSpring(obj1, obj2, k, color, len) {
 // objs.push(s2);
 
 class Simulation {
-  constructor(n_masses, y) {
-    this.mm = .3;
+  constructor(n_masses, y, options, k, masses_mass) {
     this.n_masses = n_masses;
     this.y = y;
+    this.k = k || 70000;
+    this.mm = masses_mass || .3;
+
+    this.options = options || {};
+    {
+      let defaults = {
+        'type': 'vertical',
+        'gravity': false,
+        'left_enabled': true,
+        'left_connected': true,
+        'left_static': true,
+        'right_enabled': true,
+        'right_connected': true,
+        'right_static': true,
+      }
+      for (let opt in defaults) {
+        if (this.options[opt] === undefined) this.options[opt] = defaults[opt];
+      }
+    }
+
     this.objs = [];
-    this.k = 70000;
 
     let space_per_spring = (width - .4 - n_masses * this.mm) / (n_masses + 1);
+
     this.boxes = [];
     for (let i = 0; i < n_masses; ++i) {
       this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
         vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
-      // this.boxes[i].forces.push(gravityField);
-      this.boxes[i].constraints.push(verticalConstraint);
-      // this.boxes[i].constraints.push(horizontalConstraint);
-      // this.boxes[i].constraints.push(pinnedConstraint);
-      // this.boxes[i].constraints.push(insideBox);
+
+      if (this.options.gravity) this.boxes[i].forces.push(gravityField);
+      if (this.options.type.includes('vertical')) this.boxes[i].constraints.push(verticalConstraint);
+      if (this.options.type.includes('horizontal')) this.boxes[i].constraints.push(horizontalConstraint);
+      if (this.options.type.includes('pinned')) this.boxes[i].constraints.push(pinnedConstraint);
+      if (this.options.type.includes('inside')) this.boxes[i].constraints.push(insideBox);
       this.objs.push(this.boxes[i]);
     }
-    let left_border = new Box(vec2(0, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
-    left_border.constraints.push(verticalConstraint);
-    // left_border.constraints.push(horizontalConstraint);
-    left_border.constraints.push(pinnedConstraint);
-    this.objs.push(left_border);
-
-    let right_border = new Box(vec2(width, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
-    right_border.constraints.push(verticalConstraint);
-    // right_border.constraints.push(horizontalConstraint);
-    right_border.constraints.push(pinnedConstraint);
-    this.objs.push(right_border);
-
-    let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', space_per_spring / 50);
-    // let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', space_per_spring / 50);
     this.springs = [];
-    this.objs.push(s0);
-    // this.objs.push(sN);
 
-    this.springs[0] = s0;
     for (let i = 1; i < n_masses; ++i) {
       this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', space_per_spring / 50);
       this.objs.push(this.springs[i]);
+      for (let b of this.boxes) {
+        svg.appendChild(b.el);
+      }
     }
-    // this.springs[this.springs.length] = sN;
 
-    for (let b of this.boxes) {
-      svg.appendChild(b.el);
+    if (this.options.left_enabled) {
+      let left_border = new Box(vec2(0, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+      left_border.constraints.push(verticalConstraint);
+      if (this.options.left_static) left_border.constraints.push(horizontalConstraint);
+      else left_border.constraints.push(pinnedConstraint);
+      this.objs.push(left_border);
+
+      if (this.options.left_connected) {
+        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', space_per_spring / 50);
+        this.objs.push(s0);
+        this.springs[0] = s0;
+      }
+      svg.appendChild(left_border.el);
     }
-    svg.appendChild(left_border.el);
-    svg.appendChild(right_border.el);
+
+    if (this.options.right_enabled) {
+      let right_border = new Box(vec2(width, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+      right_border.constraints.push(verticalConstraint);
+      if (this.options.right_static) right_border.constraints.push(horizontalConstraint);
+      else right_border.constraints.push(pinnedConstraint);
+      this.objs.push(right_border);
+
+      if (this.options.right_connected) {
+        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', space_per_spring / 50);
+        this.objs.push(sN);
+        this.springs[this.springs.length] = sN;
+      }
+      svg.appendChild(right_border.el);
+    }
   }
 
   update(dt) {
@@ -886,7 +915,7 @@ simulations.push(sim3);
 simulations.push(sim4);
 simulations.push(sim5);
 simulations.push(new Simulation(12, 12));
-simulations.push(new Simulation(55, 15));
+simulations.push(new Simulation(55, 15, { 'left_static': false }));
 
 // triste = sim3.objs[1];
 
@@ -943,7 +972,7 @@ function loop() {
 
 function keyboard_pressed(event) {
   if (event.key === " ") {
-    running = ! running;
+    running = !running;
   }
 }
 

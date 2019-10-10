@@ -804,7 +804,7 @@ class Simulation {
     let space_per_spring = (width - .4 - n_masses * this.mm) / (n_masses + 1);
     this.boxes = [];
     for (let i = 0; i < n_masses; ++i) {
-      this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1/2), this.y),
+      this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
         vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
       // this.boxes[i].forces.push(gravityField);
       this.boxes[i].constraints.push(verticalConstraint);
@@ -827,10 +827,10 @@ class Simulation {
     this.springs = [];
     this.objs.push(s0);
     this.objs.push(sN);
-    
+
     this.springs[0] = s0;
     for (let i = 1; i < n_masses; ++i) {
-      this.springs[i] = connectWithSpring(this.boxes[i-1], this.boxes[i], this.k, 'yellow', space_per_spring / 50);
+      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', space_per_spring / 50);
       this.objs.push(this.springs[i]);
     }
     this.springs[this.springs.length] = sN;
@@ -869,11 +869,22 @@ simulations.push(sim5);
 
 // triste = sim3.objs[1];
 
+let paused = document.createElementNS(nssvg, 'text');
+paused.setAttribute('x', '5');
+paused.setAttribute('y', `${height / 6}`);
+paused.setAttribute('font-size', '1');
+paused.setAttribute('text-anchor', 'middle');
+paused.setAttribute('fill', '#888');
+paused.textContent = 'PAUSED';
+// paused.style.setProperty('opacity', '0');
+svg.appendChild(paused);
+
 function loop() {
   let timenow = performance.now();
   elapsedTime = timenow - lastTime;
   lastTime = timenow;
   if (running) {
+    paused.style.setProperty('opacity', '0');
     timeSinceLastUpdate += elapsedTime;
     // let t3 = performance.now();
     while (timeSinceLastUpdate >= timePerFrame) {
@@ -901,10 +912,20 @@ function loop() {
     //   o.draw();
     // }
     // sim3.draw();
+  } else {
+    paused.style.setProperty('opacity', '1');
   }
   if (again) {
     requestAnimationFrame(loop);
   }
 }
+
+function keyboard_pressed(event) {
+  if (event.key === " ") {
+    running = ! running;
+  }
+}
+
+document.addEventListener('keydown', keyboard_pressed);
 
 loop();

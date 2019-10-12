@@ -128,13 +128,15 @@ document.addEventListener('mousemove', drag, false);
 document.addEventListener('mouseup', endDrag, false);
 
 class Box {
-  constructor(pos, size, mass, vel, color) {
+  constructor(pos, size, mass, vel, color, colorStroke, strokeWidth = .1) {
     this.initial_position = pos.copy();
     this.initial_velocity = vel.copy();
 
     this.pos = pos.copy();
     this.size = size.copy();
     this.color = color;
+    this.colorStroke = colorStroke;
+    this.strokeWidth = strokeWidth;
 
     this.forces = [];
     this.constraints = [];
@@ -150,7 +152,11 @@ class Box {
     this.el.setAttribute('z', '2');
     this.el.setAttribute('width', this.size.x);
     this.el.setAttribute('height', this.size.y);
-    this.el.setAttribute('fill', this.color)
+    this.el.setAttribute('fill', this.color);
+    if (this.colorStroke) {
+      this.el.setAttribute('stroke', this.colorStroke);
+      this.el.setAttribute('stroke-width', this.strokeWidth);
+    }
 
     this.el.classList.add('draggable');
 
@@ -235,7 +241,7 @@ function spring_between(o1, o2) {
   let p2 = vec2(o2.left.x, o2.y);
 
   let len = Vector2.subtract(p2, p1);
-  
+
   let sides = Vector2.scale(0.05, len);
   let bla = Vector2.scale(0.09, len);
 
@@ -413,8 +419,10 @@ class Simulation {
 
     this.boxes = [];
     for (let i = 0; i < n_masses; ++i) {
+      // this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
+      //   vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
       this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
-        vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
+        vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff', '#004955', .05);
 
       if (this.options.gravity) this.boxes[i].forces.push(gravityField);
       if (this.options.air_viscosity) this.boxes[i].forces.push(fluidViscosity(this.viscosity));
@@ -429,9 +437,6 @@ class Simulation {
     for (let i = 1; i < n_masses; ++i) {
       this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
       this.objs.push(this.springs[i]);
-      for (let b of this.boxes) {
-        svg.appendChild(b.el);
-      }
     }
 
     if (this.options.left_enabled) {
@@ -462,6 +467,9 @@ class Simulation {
         this.springs[this.springs.length] = sN;
       }
       svg.appendChild(right_border.el);
+    }
+    for (let b of this.boxes) {
+      svg.appendChild(b.el);
     }
   }
 
@@ -657,6 +665,15 @@ class Slider {
 
   get value() {
     return this.val;
+  }
+
+  set value(val) {
+    let displacement = (val - this.val) / (this.val2 - this.val1) * this.len;
+    if (this.horizontal) {
+      this.sl.x += displacement;
+    } else {
+      this.sl.y -= displacement;
+    }
   }
 }
 
@@ -979,7 +996,7 @@ class WaveMarker {
 
     this.color = color;
     this.color2 = color2;
-    
+
     let x1 = this.center.x - this.len / 2;
     let x2 = this.center.x + this.len / 2;
 

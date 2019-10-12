@@ -10,3 +10,8 @@ body {
 .draggable {
     cursor: move;
 }
+
+.radio:hover {
+    fill-opacity: .5;
+    stroke: #444;
+}

@@ -650,7 +650,7 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
     }
   }
   el.setAttribute('d', d);
-  
+
   let sine = {
     el,
     width,
@@ -703,26 +703,42 @@ let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_sl
 class RadioGroup {
   constructor() {
     this.radios = [];
-    this.selected;
+    this.selected_;
+  }
+
+  set selected(sel) {
+    if (this.radios[this.selected_]) {
+      this.radios[this.selected_].unselect();
+    }
+    if (this.radios[sel]) {
+      this.radios[sel].select();
+    }
+    this.selected_ = sel;
   }
 
   get value() {
-    this.radios[this.selected];
+    if (this.radios[this.selected_]) {
+      return this.radios[this.selected_].value;
+    }
   }
 
   addRadio(pos, size = 1, value, label) {
     let radio = {
-
+      value
     };
+
     let radio_el = document.createElementNS(nssvg, 'circle');
     radio_el.setAttribute('cx', pos.x);
     radio_el.setAttribute('cy', height - pos.y);
     radio_el.setAttribute('r', size * .07);
     // radio_el.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
     radio_el.setAttribute('fill-opacity', "0");
-    radio_el.setAttribute('fill', "#fafafa");
+    radio_el.setAttribute('fill', "#888");
     radio_el.setAttribute('stroke-width', size * .03);
     radio_el.setAttribute('stroke', "#888");
+    radio_el.classList.add('radio');
+
+    radio_el.addEventListener('mousedown', (function () { this.selected = this.radios.findIndex(x => x === radio); }).bind(this));
 
     let radio_mark = document.createElementNS(nssvg, 'circle');
     radio_mark.setAttribute('cx', pos.x);
@@ -731,27 +747,41 @@ class RadioGroup {
     // radio_mark.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
     radio_mark.setAttribute('fill-opacity', "1");
     radio_mark.setAttribute('fill', "#555");
+    radio_mark.setAttribute('visibility', "hidden");
     // radio_mark.setAttribute('stroke-width', ".03");
     // radio_mark.setAttribute('stroke', "#888");
 
     let label_el = document.createElementNS(nssvg, 'text');
     label_el.setAttribute('x', pos.x + size * .14);
-    label_el.setAttribute('y', height - pos.y - size * .07);
-    label_el.setAttribute('font-size', .3 * size);
+    label_el.setAttribute('y', height - pos.y - size * .04);
+    label_el.setAttribute('font-size', .18 * size);
     label_el.setAttribute('text-anchor', 'start');
     label_el.setAttribute('alignment-baseline', 'middle');
     label_el.setAttribute('fill', "#888");
     label_el.textContent = label;
+
     svg.appendChild(label_el);
 
     svg.appendChild(radio_el);
     svg.appendChild(radio_mark);
+    radio.el = radio_el;
+    radio.mark = radio_mark;
+    radio.label = label_el;
+    radio.select = function () {
+      this.mark.setAttribute('visibility', 'visible');
+    };
+    radio.unselect = function () {
+      this.mark.setAttribute('visibility', 'hidden');
+    };
+
+    this.radios.push(radio);
+    if (this.radios.length === 1) this.selected = this.radios.findIndex(x => x === radio);
   }
 }
 
 let radios = new RadioGroup();
-radios.addRadio(vec2(4, 5), 2, false, 'sim');
-radios.addRadio(vec2(4, 5.5), 1, true, 'não');
+radios.addRadio(vec2(4, 5), 1.5, false, 'sim');
+radios.addRadio(vec2(4, 5.5), 1.5, true, 'não');
 
 function loop() {
   let timenow = performance.now();

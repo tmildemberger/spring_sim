@@ -20,3 +20,8 @@ body {
     fill-opacity: .5;
     stroke: #444;
 }
+
+.button:hover {
+    fill-opacity: .35;
+    stroke: #555;
+}

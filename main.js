@@ -433,6 +433,13 @@ class Simulation {
       o.update(dt);
     }
   }
+
+  reset() {
+    for (let b of this.boxes) {
+      b.pos = b.initial_position.copy();
+      b.vel = b.initial_velocity.copy();
+    }
+  }
 }
 
 let timePerFrame = 1 / 60 * 1000;
@@ -459,7 +466,7 @@ let simulations = [];
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
 // simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-// simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': false }, 200));
+simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
 // simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
 // simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 97));
@@ -613,7 +620,6 @@ class Slider {
   }
 }
 
-let simulation_speed = 1;
 let paused = document.createElementNS(nssvg, 'text');
 paused.setAttribute('x', '5');
 paused.setAttribute('y', `${height / 6}`);
@@ -630,6 +636,8 @@ let s1 = new Slider(vec2(6, 4), 2, 25, 32, false, 'hello');
 let s3 = new Slider(vec2(1, 1), 2, 25, 32, true, 'hello', true, 2, true);
 
 function sine_between(a, b, n_half_T, color, width, amplitude) {
+  a = vec2(a.x, height - a.y);
+  b = vec2(b.x, height - b.y);
   if (a.y !== b.y || b.x < a.x) console.log('drawing weird sine wave');
   let y = a.y;
   let el = document.createElementNS(nssvg, 'path');
@@ -638,6 +646,7 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
   el.setAttribute('stroke-width', width.value.toString());
   el.setAttribute('stroke', color);
   el.setAttribute('fill-opacity', '0');
+  el.setAttribute('pointer-events', 'visibleStroke');
   let dist = (b.x - a.x) / n_half_T.value;
   let next = vec2(a.x + dist, y);
   let d = `M ${a.x} ${y} C ${a.x + .3642 * dist} ${y - amplitude.value} ${a.x + .7058 * dist} ${y - amplitude.value} ${next.x} ${y}`;
@@ -694,8 +703,9 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
 }
 
 let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
-let amplitude_slider = new Slider(vec2(5, 7), 2, -5, 5, true, 'amplitude', false, 1, true);
+let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
 let width_slider = new Slider(vec2(8, 5), 2, .05, 2, false, 'width', false, 1, true);
+let simulation_speed = new Slider(vec2(1, 6.5), 2, -1, 3, true, 'simulation speed', false, 1, false);
 
 let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
 let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);
@@ -844,13 +854,117 @@ class CheckBox {
 
 let checkbox = new CheckBox(vec2(4, 4.5), 1.5, 'legal', true);
 
+class Button {
+  constructor(pos, size, caption_element) {
+    this.pos = pos.copy();
+    this.size = size.copy();
+
+    this.caption_el = caption_element;
+
+    this.button_el = document.createElementNS(nssvg, 'rect');
+    this.button_el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.button_el.setAttribute('y', height - (this.pos.y - this.size.y / 2));
+    this.button_el.setAttribute('width', this.size.x);
+    this.button_el.setAttribute('height', this.size.y);
+    // this.button_el.setAttribute('y2', height - (this.this.pos1.y + (this.horizontal ? 0 : this.len)));
+    this.button_el.setAttribute('fill-opacity', ".25");
+    this.button_el.setAttribute('fill', "#888");
+    this.button_el.setAttribute('stroke-width', .05);
+    this.button_el.setAttribute('stroke', "#888");
+    this.button_el.classList.add('button');
+
+    this.button_el.addEventListener('mousedown', this.clicked.bind(this));
+
+    if (this.caption_el) {
+      svg.appendChild(this.caption_el);
+    }
+
+    svg.appendChild(this.button_el);
+  }
+
+  clicked() {
+    console.log(this);
+  }
+}
+
+let t = document.createElementNS(nssvg, 'text');
+t.setAttribute('x', 3.9);
+t.setAttribute('y', height - 6.1);
+// t.setAttribute('x', 0);
+// t.setAttribute('y', 0);
+t.setAttribute('font-size', .18);
+t.setAttribute('text-anchor', 'start');
+t.setAttribute('alignment-baseline', 'middle');
+t.setAttribute('fill', "#888");
+t.textContent = 'hi';
+
+let btn = new Button(vec2(4, 6.5), vec2(.8, .4), t);
+
+class Waves {
+  constructor(pos, len, number, color, color2, size, amplitude) {
+    this.pos = pos.copy();
+    this.pos2 = vec2(this.pos.x + len, this.pos.y);
+    this.size = size.copy();
+
+    this.amplitude = amplitude;
+
+    this.len = len;
+    this.number = number;
+
+    this.color = color;
+    this.color2 = color2;
+
+    this.sine = sine_between(this.pos, this.pos2, { value: this.number }, this.color, { value: 0.02 }, this.amplitude);
+
+    this.left = new Box(this.pos, this.size, 1, vec2(0, 0), this.color2);
+    this.left.constraints.push(horizontalConstraint);
+    this.left.constraints.push(verticalConstraint);
+    this.right = new Box(vec2(this.pos.x + len, this.pos.y), this.size, 1, vec2(0, 0), this.color2);
+    this.right.constraints.push(horizontalConstraint);
+    this.right.constraints.push(verticalConstraint);
+  }
+}
+
+let wav = new Waves(vec2(4, 6.5), 1.5, 3, 'blue', '#222', vec2(.05, .08), amplitude_slider);
+
+class WaveMarker {
+  constructor(center, len, number, color, color2, width) {
+    this.center = center.copy();
+    this.len = len;
+
+    this.amplitude = { value: .2 };
+
+    this.number = number;
+    this.width = width;
+
+    this.color = color;
+    this.color2 = color2;
+    
+    let x1 = this.center.x - this.len / 2;
+    let x2 = this.center.x + this.len / 2;
+
+    this.line = document.createElementNS(nssvg, 'line');
+    this.line.setAttribute('x1', x1);
+    this.line.setAttribute('y1', height - this.center.y);
+    this.line.setAttribute('x2', x2);
+    this.line.setAttribute('y2', height - this.center.y);
+    this.line.setAttribute('stroke', this.color2);
+    this.line.setAttribute('stroke-width', this.width);
+
+    svg.appendChild(this.line);
+    this.sine = sine_between(vec2(x1, this.center.y), vec2(x2, this.center.y), { value: this.number }, this.color, { value: this.width }, this.amplitude);
+  }
+}
+
+let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
+
 function loop() {
   let timenow = performance.now();
   elapsedTime = timenow - lastTime;
   lastTime = timenow;
   if (running) {
     paused.style.setProperty('opacity', '0');
-    timeSinceLastUpdate += elapsedTime * simulation_speed;
+    timeSinceLastUpdate += elapsedTime * simulation_speed.value;
     // let t3 = performance.now();
     while (timeSinceLastUpdate >= timePerFrame) {
       timeSinceLastUpdate -= timePerFrame;

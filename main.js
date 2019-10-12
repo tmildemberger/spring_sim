@@ -450,7 +450,7 @@ let simulations = [];
 // simulations.push(sim4);
 // simulations.push(sim5);
 // simulations.push(new Simulation(12, 12));
-simulations.push(new Simulation(55, 3, { 'left_static': false, 'right_connected': false }));
+// simulations.push(new Simulation(55, 3, { 'left_static': false, 'right_connected': false }));
 // simulations.push(new Simulation(55, 6, { 'left_static': false, 'right_connected': false }));
 // simulations.push(new Simulation(55, 9, { 'left_static': false, 'right_connected': false }));
 // simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': false }, 20));
@@ -693,12 +693,65 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
   return sine;
 }
 
-let halves_slider = new Slider(vec2(2, 7), 2, 1, 8, true, 'n_half_T', true, 1, true);
-let amplitude_slider = new Slider(vec2(5, 7), 2, .1, 5, true, 'amplitude', false, 1, true);
+let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
+let amplitude_slider = new Slider(vec2(5, 7), 2, -5, 5, true, 'amplitude', false, 1, true);
 let width_slider = new Slider(vec2(8, 5), 2, .05, 2, false, 'width', false, 1, true);
 
 let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
 let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);
+
+class RadioGroup {
+  constructor() {
+    this.radios = [];
+    this.selected;
+  }
+
+  get value() {
+    this.radios[this.selected];
+  }
+
+  addRadio(pos, size = 1, value, label) {
+    let radio = {
+
+    };
+    let radio_el = document.createElementNS(nssvg, 'circle');
+    radio_el.setAttribute('cx', pos.x);
+    radio_el.setAttribute('cy', height - pos.y);
+    radio_el.setAttribute('r', size * .07);
+    // radio_el.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    radio_el.setAttribute('fill-opacity', "0");
+    radio_el.setAttribute('fill', "#fafafa");
+    radio_el.setAttribute('stroke-width', size * .03);
+    radio_el.setAttribute('stroke', "#888");
+
+    let radio_mark = document.createElementNS(nssvg, 'circle');
+    radio_mark.setAttribute('cx', pos.x);
+    radio_mark.setAttribute('cy', height - pos.y);
+    radio_mark.setAttribute('r', size * .035);
+    // radio_mark.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    radio_mark.setAttribute('fill-opacity', "1");
+    radio_mark.setAttribute('fill', "#555");
+    // radio_mark.setAttribute('stroke-width', ".03");
+    // radio_mark.setAttribute('stroke', "#888");
+
+    let label_el = document.createElementNS(nssvg, 'text');
+    label_el.setAttribute('x', pos.x + size * .14);
+    label_el.setAttribute('y', height - pos.y - size * .07);
+    label_el.setAttribute('font-size', .3 * size);
+    label_el.setAttribute('text-anchor', 'start');
+    label_el.setAttribute('alignment-baseline', 'middle');
+    label_el.setAttribute('fill', "#888");
+    label_el.textContent = label;
+    svg.appendChild(label_el);
+
+    svg.appendChild(radio_el);
+    svg.appendChild(radio_mark);
+  }
+}
+
+let radios = new RadioGroup();
+radios.addRadio(vec2(4, 5), 2, false, 'sim');
+radios.addRadio(vec2(4, 5.5), 1, true, 'não');
 
 function loop() {
   let timenow = performance.now();

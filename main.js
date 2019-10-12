@@ -19,7 +19,7 @@ function resize_things() {
 resize_things();
 document.defaultView.addEventListener('resize', resize_things);
 
-let nssvg = 'http://www.w3.org/2000/svg'
+let nssvg = 'http://www.w3.org/2000/svg';
 
 class Vector2 {
   constructor(x, y) {
@@ -245,7 +245,7 @@ function spring_between(o1, o2) {
   let sides = Vector2.scale(0.05, len);
   let bla = Vector2.scale(0.09, len);
 
-  let amplitude = .3;
+  let amplitude = .25;
 
   let c1 = Vector2.rotate(vec2(.48 * bla.length(), amplitude), bla.angle());
   let c2 = Vector2.rotate(vec2(.52 * bla.length(), amplitude), bla.angle());
@@ -289,7 +289,7 @@ class Spring {
     else this.el.setAttribute('d', spring_between(this.left, this.right));
     this.el.setAttribute('fill-opacity', '0');
     this.el.setAttribute('pointer-events', 'visibleStroke');
-    this.el.setAttribute('stroke-width', '0.1');
+    this.el.setAttribute('stroke-width', '0.08');
     this.el.setAttribute('stroke', this.color);
     svg.appendChild(this.el);
   }
@@ -435,7 +435,7 @@ class Simulation {
     this.springs = [];
 
     for (let i = 1; i < n_masses; ++i) {
-      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
+      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'red', this.options.streched_springs ? space_per_spring / 50 : undefined);
       this.objs.push(this.springs[i]);
     }
 
@@ -447,7 +447,7 @@ class Simulation {
       this.objs.push(left_border);
 
       if (this.options.left_connected) {
-        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
+        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'red', this.options.streched_springs ? space_per_spring / 50 : undefined);
         this.objs.push(s0);
         this.springs[0] = s0;
       }
@@ -462,7 +462,7 @@ class Simulation {
       this.objs.push(right_border);
 
       if (this.options.right_connected) {
-        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined, false);
+        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'red', this.options.streched_springs ? space_per_spring / 50 : undefined, false);
         this.objs.push(sN);
         this.springs[this.springs.length] = sN;
       }
@@ -486,6 +486,7 @@ class Simulation {
     for (let b of this.boxes) {
       b.pos = b.initial_position.copy();
       b.vel = b.initial_velocity.copy();
+      b.update(0);
     }
   }
 }
@@ -514,7 +515,8 @@ let simulations = [];
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
 // simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
+simulations.push(new Simulation(3, 3, { 'type': 'horizontal', 'streched_springs': false }, 200));
+// simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
 // simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
 // simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 97));
@@ -761,7 +763,7 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
 
 let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
 let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
-let width_slider = new Slider(vec2(8, 5), 2, .05, 2, false, 'width', false, 1, true);
+let width_slider = new Slider(vec2(8, 5), 2, 0, 2, false, 'width', false, 1, true);
 let simulation_speed = new Slider(vec2(1, 6.5), 2, .1, 4, true, 'simulation speed', false, 1, false);
 
 let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });

@@ -387,9 +387,16 @@ function connectWithSpring(obj1, obj2, k, color, len, simple) {
 }
 
 class Simulation {
-  constructor(n_masses, y, options, k = 70000, masses_wid = .3, viscosity) {
+  constructor(n_masses, x1, x2, y1, y2, options, k = 70000, masses_wid = .3, viscosity) {
+    this.x1 = x1;
+    this.x2 = x2;
+    this.width = this.x2 - this.x1;
+    
+    this.y1 = y1;
+    this.y2 = y2;
+    this.height = this.y2 - this.y1;
+
     this.n_masses = n_masses;
-    this.y = y;
     this.k = k;
     this.mm = masses_wid;
     this.viscosity = viscosity === undefined ? Math.sqrt(12 * this.k * 20 / 5) : viscosity;
@@ -415,13 +422,13 @@ class Simulation {
 
     this.objs = [];
 
-    let space_per_spring = (width - .4 - n_masses * this.mm) / (n_masses + 1);
+    let space_per_spring = (this.width - .4 - this.n_masses * this.mm) / (this.n_masses + 1);
 
     this.boxes = [];
-    for (let i = 0; i < n_masses; ++i) {
+    for (let i = 0; i < this.n_masses; ++i) {
       // this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
       //   vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
-      this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
+      this.boxes[i] = new Box(vec2(this.x1 + .2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y1 + this.height / 2),
         vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff', '#004955', .05);
 
       if (this.options.gravity) this.boxes[i].forces.push(gravityField);
@@ -440,7 +447,7 @@ class Simulation {
     }
 
     if (this.options.left_enabled) {
-      let left_border = new Box(vec2(0, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+      let left_border = new Box(vec2(this.x1 + .1, this.y1 + this.height / 2), vec2(.2, 1.2), 1000, vec2(0, 0), 'black');
       left_border.constraints.push(verticalConstraint);
       if (this.options.left_static) left_border.constraints.push(horizontalConstraint);
       else left_border.constraints.push(pinnedConstraint);
@@ -455,7 +462,7 @@ class Simulation {
     }
 
     if (this.options.right_enabled) {
-      let right_border = new Box(vec2(width, this.y), vec2(.4, 2), 1000, vec2(0, 0), 'black');
+      let right_border = new Box(vec2(this.x2 - .1, this.y1 + this.height / 2), vec2(.2, 1.2), 1000, vec2(0, 0), 'black');
       right_border.constraints.push(verticalConstraint);
       if (this.options.right_static) right_border.constraints.push(horizontalConstraint);
       else right_border.constraints.push(pinnedConstraint);
@@ -515,7 +522,7 @@ let simulations = [];
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
 // simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-simulations.push(new Simulation(3, 3, { 'type': 'horizontal', 'streched_springs': false }, 200));
+simulations.push(new Simulation(3, 2, 8, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 5000));
 // simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
 // simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
 // simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));

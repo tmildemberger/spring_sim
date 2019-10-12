@@ -762,8 +762,8 @@ class RadioGroup {
 
     svg.appendChild(label_el);
 
-    svg.appendChild(radio_el);
     svg.appendChild(radio_mark);
+    svg.appendChild(radio_el);
     radio.el = radio_el;
     radio.mark = radio_mark;
     radio.label = label_el;
@@ -782,6 +782,67 @@ class RadioGroup {
 let radios = new RadioGroup();
 radios.addRadio(vec2(4, 5), 1.5, false, 'sim');
 radios.addRadio(vec2(4, 5.5), 1.5, true, 'não');
+
+class CheckBox {
+  constructor(pos, size = 1, label, def = false) {
+    this.checked = def;
+
+    this.check_el = document.createElementNS(nssvg, 'rect');
+    this.check_el.setAttribute('x', pos.x - .12 * size / 2);
+    this.check_el.setAttribute('y', height - pos.y + .12 * size / 2);
+    this.check_el.setAttribute('width', size * .12);
+    this.check_el.setAttribute('height', size * .12);
+    // this.check_el.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    this.check_el.setAttribute('fill-opacity', "0");
+    this.check_el.setAttribute('fill', "#888");
+    this.check_el.setAttribute('stroke-width', size * .03);
+    this.check_el.setAttribute('stroke', "#888");
+    this.check_el.classList.add('check');
+
+    this.check_el.addEventListener('mousedown', this.check.bind(this));
+
+    this.mark = document.createElementNS(nssvg, 'rect');
+    this.mark.setAttribute('x', pos.x - .05 * size / 2);
+    this.mark.setAttribute('y', height - pos.y + .19 * size / 2);
+    this.mark.setAttribute('width', size * .05);
+    this.mark.setAttribute('height', size * .05);
+    // this.mark.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    this.mark.setAttribute('fill-opacity', "1");
+    this.mark.setAttribute('fill', "#555");
+    this.mark.setAttribute('visibility', this.checked ? 'visible' : "hidden");
+    // this.mark.setAttribute('stroke-width', ".03");
+    // this.mark.setAttribute('stroke', "#888");
+
+    this.label = document.createElementNS(nssvg, 'text');
+    this.label.setAttribute('x', pos.x + size * .14);
+    this.label.setAttribute('y', height - pos.y + size * .1);
+    this.label.setAttribute('font-size', .18 * size);
+    this.label.setAttribute('text-anchor', 'start');
+    this.label.setAttribute('alignment-baseline', 'middle');
+    this.label.setAttribute('fill', "#888");
+    this.label.textContent = label;
+
+    svg.appendChild(this.label);
+
+    svg.appendChild(this.mark);
+    svg.appendChild(this.check_el);
+  }
+
+  get value() {
+    return this.checked;
+  }
+
+  check() {
+    if (this.checked) {
+      this.mark.setAttribute('visibility', 'hidden');
+    } else {
+      this.mark.setAttribute('visibility', 'visible');
+    }
+    this.checked = !this.checked;
+  }
+}
+
+let checkbox = new CheckBox(vec2(4, 4.5), 1.5, 'legal', true);
 
 function loop() {
   let timenow = performance.now();

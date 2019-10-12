@@ -15,3 +15,8 @@ body {
     fill-opacity: .5;
     stroke: #444;
 }
+
+.check:hover {
+    fill-opacity: .5;
+    stroke: #444;
+}

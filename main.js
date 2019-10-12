@@ -230,12 +230,48 @@ class Box {
   }
 }
 
+function spring_between(o1, o2) {
+  let p1 = vec2(o1.right.x, o1.y);
+  let p2 = vec2(o2.left.x, o2.y);
+
+  let len = Vector2.subtract(p2, p1);
+  
+  let sides = Vector2.scale(0.05, len);
+  let bla = Vector2.scale(0.09, len);
+
+  let amplitude = .3;
+
+  let c1 = Vector2.rotate(vec2(.48 * bla.length(), amplitude), bla.angle());
+  let c2 = Vector2.rotate(vec2(.52 * bla.length(), amplitude), bla.angle());
+  let c2n = Vector2.rotate(vec2(.52 * bla.length(), -amplitude), bla.angle());
+  let d = `M ${p1.x} ${p1.y} `;
+  p1.add(sides);
+  let p3 = Vector2.add(p1, bla);
+  d += `l ${sides.x} ${sides.y} C ${p1.x + c1.x} ${p1.y + c1.y} ${p1.x + c2.x} ${p1.y + c2.y} ${p3.x} ${p3.y}`;
+
+  // .3642
+  // .7058
+  for (let i = 1; i < 10; ++i) {
+    p1.add(bla);
+    p3.add(bla);
+    if (i % 2 === 0) {
+      d += ` S ${p1.x + c2.x} ${p1.y + c2.y} ${p3.x} ${p3.y}`;
+    } else {
+      d += ` S ${p1.x + c2n.x} ${p1.y + c2n.y} ${p3.x} ${p3.y}`;
+    }
+  }
+  d += ` l ${sides.x} ${sides.y}`;
+
+  return d;
+}
+
 class Spring {
-  constructor(left, right, k, color, len) {
+  constructor(left, right, k, color, len, simple = false) {
     this.left = left;
     this.left.listeners.push(this.update.bind(this));
     this.right = right;
     this.right.listeners.push(this.update.bind(this));
+    this.simple = simple;
 
     this.k = k;
     this.color = color;
@@ -243,7 +279,10 @@ class Spring {
 
     this.el = document.createElementNS(nssvg, 'path');
     this.el.classList.add('spring');
-    this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
+    if (this.simple) this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
+    else this.el.setAttribute('d', spring_between(this.left, this.right));
+    this.el.setAttribute('fill-opacity', '0');
+    this.el.setAttribute('pointer-events', 'visibleStroke');
     this.el.setAttribute('stroke-width', '0.1');
     this.el.setAttribute('stroke', this.color);
     svg.appendChild(this.el);
@@ -274,7 +313,8 @@ class Spring {
   }
 
   update(dt) {
-    this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
+    if (this.simple) this.el.setAttribute('d', `M ${this.left.right.x} ${this.left.y} L ${this.right.left.x} ${this.right.y}`);
+    else this.el.setAttribute('d', spring_between(this.left, this.right));
   }
 }
 
@@ -333,8 +373,8 @@ let pinnedConstraint = {
   }
 }
 
-function connectWithSpring(obj1, obj2, k, color, len) {
-  let s = new Spring(obj1, obj2, k, color, len);
+function connectWithSpring(obj1, obj2, k, color, len, simple) {
+  let s = new Spring(obj1, obj2, k, color, len, simple);
   obj1.forces.push(s);
   obj2.forces.push(s);
   return s;
@@ -417,7 +457,7 @@ class Simulation {
       this.objs.push(right_border);
 
       if (this.options.right_connected) {
-        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined);
+        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'yellow', this.options.streched_springs ? space_per_spring / 50 : undefined, false);
         this.objs.push(sN);
         this.springs[this.springs.length] = sN;
       }
@@ -649,13 +689,13 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
   el.setAttribute('pointer-events', 'visibleStroke');
   let dist = (b.x - a.x) / n_half_T.value;
   let next = vec2(a.x + dist, y);
-  let d = `M ${a.x} ${y} C ${a.x + .3642 * dist} ${y - amplitude.value} ${a.x + .7058 * dist} ${y - amplitude.value} ${next.x} ${y}`;
+  let d = `M ${a.x} ${y} C ${a.x + .3642 * dist} ${y - amplitude.value} ${a.x + .6358 * dist} ${y - amplitude.value} ${next.x} ${y}`;
   for (let i = 1; i < n_half_T.value; ++i) {
     next.x += dist;
     if (i % 2 === 1) {
-      d += `S ${next.x - dist + .7058 * dist} ${y + amplitude.value} ${next.x} ${y}`;
+      d += `S ${next.x - dist + .6358 * dist} ${y + amplitude.value} ${next.x} ${y}`;
     } else {
-      d += `S ${next.x - dist + .7058 * dist} ${y - amplitude.value} ${next.x} ${y}`;
+      d += `S ${next.x - dist + .6358 * dist} ${y - amplitude.value} ${next.x} ${y}`;
     }
   }
   el.setAttribute('d', d);
@@ -669,13 +709,13 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
       this.el.setAttribute('stroke-width', this.width.value.toString());
       let dist = (b.x - a.x) / n_half_T.value;
       let next = vec2(a.x + dist, y);
-      let d = `M ${a.x} ${y} C ${a.x + .3642 * dist} ${y - this.amplitude.value} ${a.x + .7058 * dist} ${y - this.amplitude.value} ${next.x} ${y}`;
+      let d = `M ${a.x} ${y} C ${a.x + .3642 * dist} ${y - this.amplitude.value} ${a.x + .6358 * dist} ${y - this.amplitude.value} ${next.x} ${y}`;
       for (let i = 1; i < this.n_half_T.value; ++i) {
         next.x += dist;
         if (i % 2 === 1) {
-          d += `S ${next.x - dist + .7058 * dist} ${y + this.amplitude.value} ${next.x} ${y}`;
+          d += `S ${next.x - dist + .6358 * dist} ${y + this.amplitude.value} ${next.x} ${y}`;
         } else {
-          d += `S ${next.x - dist + .7058 * dist} ${y - this.amplitude.value} ${next.x} ${y}`;
+          d += `S ${next.x - dist + .6358 * dist} ${y - this.amplitude.value} ${next.x} ${y}`;
         }
       }
       // let d = `M ${a.x} ${y} c ${.3642 * (mid.x - a.x)} ${-amplitude} ${(1-.7058) * (mid.x - a.x)} ${- amplitude} ${mid.x} ${y}`;
@@ -705,7 +745,7 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
 let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
 let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
 let width_slider = new Slider(vec2(8, 5), 2, .05, 2, false, 'width', false, 1, true);
-let simulation_speed = new Slider(vec2(1, 6.5), 2, -1, 3, true, 'simulation speed', false, 1, false);
+let simulation_speed = new Slider(vec2(1, 6.5), 2, .1, 4, true, 'simulation speed', false, 1, false);
 
 let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
 let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);

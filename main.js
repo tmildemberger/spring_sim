@@ -726,10 +726,10 @@ paused.textContent = 'PAUSED';
 // paused.style.setProperty('opacity', '0');
 svg.appendChild(paused);
 
-let s2 = new Slider(vec2(7, 1), 2, 25, 32, true, 'bom dia2', undefined, undefined, false);
-let s = new Slider(vec2(4, 1), 2, 25, 32, true, 'bom dia');
-let s1 = new Slider(vec2(6, 4), 2, 25, 32, false, 'hello');
-let s3 = new Slider(vec2(1, 1), 2, 25, 32, true, 'hello', true, 2, true);
+// let s2 = new Slider(vec2(7, 1), 2, 25, 32, true, 'bom dia2', undefined, undefined, false);
+// let s = new Slider(vec2(4, 1), 2, 25, 32, true, 'bom dia');
+// let s1 = new Slider(vec2(6, 4), 2, 25, 32, false, 'hello');
+// let s3 = new Slider(vec2(1, 1), 2, 25, 32, true, 'hello', true, 2, true);
 
 function sine_between(a, b, n_half_T, color, width, amplitude) {
   a = vec2(a.x, height - a.y);
@@ -798,13 +798,13 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
   return sine;
 }
 
-let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
-let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
-let width_slider = new Slider(vec2(8, 5), 2, 0, 2, false, 'width', false, 1, true);
+// let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
+// let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
+// let width_slider = new Slider(vec2(8, 5), 2, 0, 2, false, 'width', false, 1, true);
 let simulation_speed = new Slider(vec2(1, 6.5), 2, .1, 4, true, 'simulation speed', false, 1, false, 1);
 
-let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
-let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);
+// let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
+// let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);
 
 class RadioGroup {
   constructor() {
@@ -885,9 +885,9 @@ class RadioGroup {
   }
 }
 
-let radios = new RadioGroup();
-radios.addRadio(vec2(4, 5), 1.5, false, 'sim');
-radios.addRadio(vec2(4, 5.5), 1.5, true, 'não');
+// let radios = new RadioGroup();
+// radios.addRadio(vec2(4, 5), 1.5, false, 'sim');
+// radios.addRadio(vec2(4, 5.5), 1.5, true, 'não');
 
 class CheckBox {
   constructor(pos, size = 1, label, def = false) {
@@ -948,7 +948,7 @@ class CheckBox {
   }
 }
 
-let checkbox = new CheckBox(vec2(4, 4.5), 1.5, 'legal', true);
+// let checkbox = new CheckBox(vec2(4, 4.5), 1.5, 'legal', true);
 
 class Button {
   constructor(pos, size, caption_element) {
@@ -983,18 +983,18 @@ class Button {
   }
 }
 
-let t = document.createElementNS(nssvg, 'text');
-t.setAttribute('x', 3.9);
-t.setAttribute('y', height - 6.1);
-// t.setAttribute('x', 0);
-// t.setAttribute('y', 0);
-t.setAttribute('font-size', .18);
-t.setAttribute('text-anchor', 'start');
-t.setAttribute('alignment-baseline', 'middle');
-t.setAttribute('fill', "#888");
-t.textContent = 'hi';
+// let t = document.createElementNS(nssvg, 'text');
+// t.setAttribute('x', 3.9);
+// t.setAttribute('y', height - 6.1);
+// // t.setAttribute('x', 0);
+// // t.setAttribute('y', 0);
+// t.setAttribute('font-size', .18);
+// t.setAttribute('text-anchor', 'start');
+// t.setAttribute('alignment-baseline', 'middle');
+// t.setAttribute('fill', "#888");
+// t.textContent = 'hi';
 
-let btn = new Button(vec2(4, 6.5), vec2(.8, .4), t);
+// let btn = new Button(vec2(4, 6.5), vec2(.8, .4), t);
 
 class Waves {
   constructor(pos, len, number, color, color2, size, amplitude) {
@@ -1015,13 +1015,15 @@ class Waves {
     this.left = new Box(this.pos, this.size, 1, vec2(0, 0), this.color2);
     this.left.constraints.push(horizontalConstraint);
     this.left.constraints.push(verticalConstraint);
+    this.left.el.classList.remove('draggable');
     this.right = new Box(vec2(this.pos.x + len, this.pos.y), this.size, 1, vec2(0, 0), this.color2);
     this.right.constraints.push(horizontalConstraint);
     this.right.constraints.push(verticalConstraint);
+    this.right.el.classList.remove('draggable');
   }
 }
 
-let wav = new Waves(vec2(4, 6.5), 1.5, 3, 'blue', '#222', vec2(.05, .08), amplitude_slider);
+// let wav = new Waves(vec2(4, 6.5), 1.5, 3, 'blue', '#222', vec2(.05, .08), amplitude_slider);
 
 class WaveMarker {
   constructor(center, len, number, color, color2, width) {
@@ -1052,7 +1054,7 @@ class WaveMarker {
   }
 }
 
-let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
+// let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
 
 class System {
   constructor(n_masses = 6) {

@@ -243,23 +243,23 @@ function spring_between(o1, o2) {
   let len = Vector2.subtract(p2, p1);
 
   let sides = Vector2.scale(0.05, len);
-  let bla = Vector2.scale(0.09, len);
+  let part = Vector2.scale(0.09, len);
 
   let amplitude = .25;
 
-  let c1 = Vector2.rotate(vec2(.48 * bla.length(), amplitude), bla.angle());
-  let c2 = Vector2.rotate(vec2(.52 * bla.length(), amplitude), bla.angle());
-  let c2n = Vector2.rotate(vec2(.52 * bla.length(), -amplitude), bla.angle());
+  let c1 = Vector2.rotate(vec2(.48 * part.length(), amplitude), part.angle());
+  let c2 = Vector2.rotate(vec2(.52 * part.length(), amplitude), part.angle());
+  let c2n = Vector2.rotate(vec2(.52 * part.length(), -amplitude), part.angle());
   let d = `M ${p1.x} ${p1.y} `;
   p1.add(sides);
-  let p3 = Vector2.add(p1, bla);
+  let p3 = Vector2.add(p1, part);
   d += `l ${sides.x} ${sides.y} C ${p1.x + c1.x} ${p1.y + c1.y} ${p1.x + c2.x} ${p1.y + c2.y} ${p3.x} ${p3.y}`;
 
   // .3642
   // .7058
   for (let i = 1; i < 10; ++i) {
-    p1.add(bla);
-    p3.add(bla);
+    p1.add(part);
+    p3.add(part);
     if (i % 2 === 0) {
       d += ` S ${p1.x + c2.x} ${p1.y + c2.y} ${p3.x} ${p3.y}`;
     } else {
@@ -522,7 +522,7 @@ let simulations = [];
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
 // simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-simulations.push(new Simulation(3, 2, 8, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 5000));
+simulations.push(new Simulation(7, 0, 10, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 700));
 // simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
 // simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
 // simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));
@@ -543,9 +543,11 @@ function between(num, a, b) {
 }
 
 class Slider {
-  constructor(pos1, len, val1, val2, horizontal = true, label = '', round = true, size = 1, invert = true) {
+  constructor(pos1, len, val1, val2, horizontal = true, label = '', round = true, size = 1, invert = true, initial_value) {
     this.pos1 = pos1.copy();
     this.len = len;
+
+    this.initial_value = initial_value;
 
     this.val = val1;
 
@@ -632,7 +634,10 @@ class Slider {
     this.label.setAttribute('fill', "#888");
     this.label.textContent = this.labeltxt;
     svg.appendChild(this.label);
-
+    
+    if (this.initial_value) {
+      this.value = this.initial_value;
+    }
     // this.label.classList.add('draggable');
 
 
@@ -771,7 +776,7 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
 let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
 let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
 let width_slider = new Slider(vec2(8, 5), 2, 0, 2, false, 'width', false, 1, true);
-let simulation_speed = new Slider(vec2(1, 6.5), 2, .1, 4, true, 'simulation speed', false, 1, false);
+let simulation_speed = new Slider(vec2(1, 6.5), 2, .1, 4, true, 'simulation speed', false, 1, false, 1);
 
 let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
 let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);
@@ -1024,6 +1029,21 @@ class WaveMarker {
 
 let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
 
+class System {
+  constructor() {
+    // this.stop_button = new Button();
+    // this.simulation_speed_slider = new Slider();
+    // this.initial_positions_button = new Button();
+    // this.frame_advance_button = new Button();
+    // this.zero_positions = new Button();
+    // this.n_masses_slider = new Slider();
+    // this.show_springs_check = new CheckBox();
+    // this.show_phases_check = new CheckBox();
+
+    this.sim = new Simulation()
+  }
+}
+
 function loop() {
   let timenow = performance.now();
   elapsedTime = timenow - lastTime;
@@ -1032,10 +1052,10 @@ function loop() {
     paused.style.setProperty('opacity', '0');
     timeSinceLastUpdate += elapsedTime * simulation_speed.value;
     // let t3 = performance.now();
-    while (timeSinceLastUpdate >= timePerFrame) {
-      timeSinceLastUpdate -= timePerFrame;
+    while (timeSinceLastUpdate >= timePerFrame * simulation_speed.value) {
+      timeSinceLastUpdate -= timePerFrame * simulation_speed.value;
       for (let s of simulations) {
-        s.update(timePerFrame / 1000);
+        s.update(timePerFrame * simulation_speed.value / 1000);
       }
     }
   } else {

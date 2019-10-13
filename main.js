@@ -1135,16 +1135,18 @@ class System {
     for (let i = 0; i < this.n_masses; ++i) {
       this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 2, false, '', false, .7, false, 0);
       this.sliders[i].addListener(function () {
-      this.normal_amplitudes[i] = this.sliders[i].value;
-        for (let i = 0; i < this.n_masses; ++i) {
-          if (this.sim.masses[i] !== elements.get(selectedElement)) {
-            this.sim.masses[i].pos.y = this.masses_zero_positions[i];
-            for (let j = 0; j < this.n_masses; ++j) {
-              this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
-            }
-            this.sim.masses[i].little_update();
-          }
-        }
+        this.normal_amplitudes[i] = this.sliders[i].value;
+        this.move_masses_to_the_correct_place();
+      }.bind(this));
+    }
+
+    this.phase_sliders = [];
+
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.phase_sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 1), .8, -Math.PI, Math.PI, false, '', false, .7, false, 0);
+      this.phase_sliders[i].addListener(function () {
+        this.initial_phases[i] = this.phase_sliders[i].value;
+        this.move_masses_to_the_correct_place();
       }.bind(this));
     }
 
@@ -1170,15 +1172,7 @@ class System {
         this.time = 0;
       } else {
         this.time += dt;
-        for (let i = 0; i < this.n_masses; ++i) {
-          if (this.sim.masses[i] !== elements.get(selectedElement)) {
-            this.sim.masses[i].pos.y = this.masses_zero_positions[i];
-            for (let j = 0; j < this.n_masses; ++j) {
-              this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
-            }
-            this.sim.masses[i].little_update();
-          }
-        }
+        this.move_masses_to_the_correct_place();
       }
     }
     for (let u of this.updates) {
@@ -1199,7 +1193,15 @@ class System {
   }
 
   move_masses_to_the_correct_place() {
-    
+    for (let i = 0; i < this.n_masses; ++i) {
+      if (this.sim.masses[i] !== elements.get(selectedElement)) {
+        this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+        for (let j = 0; j < this.n_masses; ++j) {
+          this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        }
+        this.sim.masses[i].little_update();
+      }
+    }
   }
 
   changed_initial_positions(copy) {
@@ -1225,6 +1227,11 @@ class System {
     if (this.sliders) {
       for (let i = 0; i < this.n_masses; ++i) {
         this.sliders[i].value = this.normal_amplitudes[i];
+      }
+    }
+    if (this.phase_sliders) {
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.phase_sliders[i].value = this.initial_phases[i];
       }
     }
     // this.time = 0;

@@ -547,7 +547,7 @@ let simulations = [];
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
 // simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-simulations.push(new Simulation(2, 0, 10, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 700));
+// simulations.push(new Simulation(2, 0, 10, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 700));
 // simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
 // simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
 // simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));
@@ -572,12 +572,12 @@ class Slider {
     this.pos1 = pos1.copy();
     this.len = len;
 
-    this.initial_value = initial_value;
-
     this.val = val1;
-
+    
     this.val1 = val1;
     this.val2 = val2;
+
+    this.initial_value = initial_value === undefined ? this.val1 : initial_value;
 
     this.size = size;
     this.labeltxt = label;
@@ -660,9 +660,7 @@ class Slider {
     this.label.textContent = this.labeltxt;
     svg.appendChild(this.label);
 
-    if (this.initial_value) {
-      this.value = this.initial_value;
-    }
+    this.value = this.initial_value;
     // this.label.classList.add('draggable');
 
 
@@ -1113,7 +1111,7 @@ class System {
 
     for (let i = 0; i < this.n_masses; ++i) {
 
-      this.waves[i] = new Waves(vec2(10 / 11 * (i + 1) - .4, 1), .8, i + 1, 'blue', '#222', vec2(.05, .08), {
+      this.waves[i] = new Waves(vec2(10 / (this.n_masses + 1) * (i + 1) - .4, 1), .8, i + 1, 'blue', '#222', vec2(.05, .08), {
         get value() { return this.val(); },
         val: function () {
           return .5 * this.normal_amplitudes[i] * Math.cos(this.normal_frequencies[i] * this.time - this.initial_phases[i])
@@ -1133,6 +1131,17 @@ class System {
     }
 
     this.sliders = [];
+
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, -3, 3, false, '', false, .7, false, 0);
+      this.sliders[i].addListener( function() {this.normal_amplitudes[i] = this.sliders[i].value; }.bind(this) );
+    }
+
+    this.updates.push( function () {
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.sliders[i].value = this.normal_amplitudes[i];
+      }
+    }.bind(this));
 
   }
 

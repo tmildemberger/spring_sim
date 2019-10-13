@@ -105,6 +105,11 @@ function startDrag(event) {
     let obj = elements.get(selectedElement);
     offset.x -= obj.x;
     offset.y -= obj.y;
+
+    if (sys.has_mass(elements.get(selectedElement))) {
+      sys.changed_initial_positions(true);
+      sys.dragging = true;
+    }
   }
 }
 
@@ -116,10 +121,18 @@ function drag(event) {
     let obj = elements.get(selectedElement);
     obj.x = coord.x - offset.x;
     obj.y = coord.y - offset.y;
+
+    if (sys.has_mass(elements.get(selectedElement))) {
+      sys.changed_initial_positions(true);
+    }
   }
 }
 
 function endDrag(event) {
+  if (sys.has_mass(elements.get(selectedElement))) {
+    sys.changed_initial_positions(true);
+    sys.dragging = false;
+  }
   selectedElement = null;
 }
 
@@ -402,7 +415,7 @@ class Simulation {
     this.x1 = x1;
     this.x2 = x2;
     this.width = this.x2 - this.x1;
-    
+
     this.y1 = y1;
     this.y2 = y2;
     this.height = this.y2 - this.y1;
@@ -646,7 +659,7 @@ class Slider {
     this.label.setAttribute('fill', "#888");
     this.label.textContent = this.labeltxt;
     svg.appendChild(this.label);
-    
+
     if (this.initial_value) {
       this.value = this.initial_value;
     }
@@ -1042,7 +1055,7 @@ class WaveMarker {
 let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
 
 class System {
-  constructor(n_masses = 2) {
+  constructor(n_masses = 6) {
     // this.stop_button = new Button();
     // this.simulation_speed_slider = new Slider();
     // this.initial_positions_button = new Button();
@@ -1060,7 +1073,7 @@ class System {
 
     this.normal_frequencies = [];
     this.eigenvectors = [];
-    
+
     for (let i = 1; i <= this.n_masses; ++i) {
       this.normal_frequencies[i - 1] = Math.sqrt(2 * this.k / this.m * Math.sin(Math.PI / 2 * i / (this.n_masses + 1)));
       let ev_i = [];
@@ -1076,46 +1089,132 @@ class System {
 
     console.log(this.normal_frequencies);
     console.log(this.eigenvectors);
-    
+
     running = false;
 
     this.normal_amplitudes = [];
+    this.initial_phases = [];
     this.time = 0;
+
+    this.dragging = false;
 
     this.masses_zero_positions = [];
     for (let i = 0; i < this.n_masses; ++i) {
       this.masses_zero_positions[i] = this.sim.masses[i].initial_position.y;
+
+      this.initial_phases[i] = 0;
     }
     this.changed_initial_positions();
+
+    this.waves = [];
+    this.updates = [];
+
+    for (let i = 0; i < this.n_masses; ++i) {
+
+      this.waves[i] = new Waves(vec2(10 / 11 * (i + 1) - .4, 1), .8, i + 1, 'blue', '#222', vec2(.05, .08), {
+        get value() { return this.val(); },
+        val: function () {
+          return .5 * this.normal_amplitudes[i] * Math.cos(this.normal_frequencies[i] * this.time - this.initial_phases[i])
+        }.bind(this),
+        listeners: [],
+        addListener(func) {
+          this.listeners.push(func);
+        },
+        update() {
+          for (let f of this.listeners) {
+            f();
+          }
+        }
+      });
+      this.updates.push(this.waves[i].amplitude.update.bind(this.waves[i].amplitude));
+      // this.waves = new WaveMarker(vec2(10 / 11 * (i + 1), 1), .8, i + 1, 'blue', '#222', 0.05);
+    }
+
+    this.sliders = [];
 
   }
 
   update(dt) {
+
     if (running === false) {
-      for (let m of this.sim.masses) {
-        m.initial_position = m.pos.copy();
-        this.changed_initial_positions();
-      }
+      // for (let m of this.sim.masses) {
+      //   m.initial_position = m.pos.copy();
+      //   this.changed_initial_positions(false);
+      // }
     } else {
-      this.time += dt;
-      for (let i = 0; i < this.n_masses; ++i) {
-        this.sim.masses[i].pos.y = this.masses_zero_positions[i];
-        for (let j = 0; j < this.n_masses; ++j) {
-          this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time);
+      if (this.dragging) {
+        this.sim.update(dt);
+        this.changed_initial_positions(true);
+        this.time = 0;
+      } else {
+        this.time += dt;
+        for (let i = 0; i < this.n_masses; ++i) {
+          if (this.sim.masses[i] !== elements.get(selectedElement)) {
+            this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+            for (let j = 0; j < this.n_masses; ++j) {
+              this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+            }
+            this.sim.masses[i].little_update();
+          }
         }
-        this.sim.masses[i].little_update();
       }
     }
+    for (let u of this.updates) {
+      u();
+    }
+    // if (dt === 0) {
+    //   for (let i = 0; i < this.n_masses; ++i) {
+    //     if (this.sim.masses[i] !== elements.get(selectedElement)) {
+    //       this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+    //       for (let j = 0; j < this.n_masses; ++j) {
+    //         this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+    //       }
+    //       this.sim.masses[i].little_update();
+    //     }
+    //   }
+    // }
+
   }
 
-  changed_initial_positions() {
+  changed_initial_positions(copy) {
     // let positions = [];
+    if (copy) {
+      for (let m of this.sim.masses) {
+        m.initial_position = m.pos.copy();
+      }
+    }
     for (let i = 0; i < this.n_masses; ++i) {
       // positions[i] = this.sim.masses[i].initial_position;
       this.normal_amplitudes[i] = 0;
       for (let j = 0; j < this.n_masses; ++j) {
-        this.normal_amplitudes[i] += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+        this.normal_amplitudes[i] += (this.sim.masses[j].pos.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
       }
+      if (this.normal_amplitudes[i] < 0) {
+        this.initial_phases[i] = Math.PI;
+        this.normal_amplitudes[i] = -this.normal_amplitudes[i];
+      } else {
+        this.initial_phases[i] = 0;
+      }
+    }
+    // this.time = 0;
+    // this.update(0);
+  }
+
+  changed_normal_amplitudes() {
+    // for (let i = 0; i < this.n_masses; ++i) {
+    //   this.sim.masses[i].initial_position.y = this.masses_zero_positions[i];
+    //   for (let j = 0; j < this.n_masses; ++j) {
+    //     this.sim.masses[i].initial_position.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(- this.initial_phases[j]);
+    //   }
+    //   this.update(0);
+    // }
+  }
+
+  has_mass(box) {
+    if (this.sim.masses.find(x => x === box)) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

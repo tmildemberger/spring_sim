@@ -1,7 +1,7 @@
 let running = true;
 let again = true;
 
-const svg = document.getElementById('graphics');
+let svg = document.getElementById('graphics');
 
 let width;
 let height;
@@ -1055,7 +1055,11 @@ class WaveMarker {
 // let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
 
 class System {
-  constructor(n_masses = 6) {
+  constructor(n_masses = 3) {
+    this.create(n_masses);
+  }
+
+  create(n_masses) {
     // this.stop_button = new Button();
     // this.simulation_speed_slider = new Slider();
     // this.initial_positions_button = new Button();
@@ -1137,6 +1141,7 @@ class System {
       this.sliders[i].addListener(function () {
         this.normal_amplitudes[i] = this.sliders[i].value;
         this.move_masses_to_the_correct_place();
+        this.recalculate_initial_positions();
       }.bind(this));
     }
 
@@ -1147,9 +1152,25 @@ class System {
       this.phase_sliders[i].addListener(function () {
         this.initial_phases[i] = this.phase_sliders[i].value;
         this.move_masses_to_the_correct_place();
+        this.recalculate_initial_positions();
       }.bind(this));
     }
 
+    this.n_masses_slider = new Slider(vec2(7, 6.5), 1.5, 1, 10, true, 'Number of Masses', true, .7, true, this.n_masses);
+    this.n_masses_slider.addListener(
+      function () {
+        if (this.n_masses_slider.value !== this.n_masses) {
+          let val = this.n_masses_slider.value;
+          document.body.removeChild(svg);
+          svg = document.createElementNS(nssvg, 'svg');
+          document.body.appendChild(svg);
+          svg.setAttribute('id', 'graphics');
+          svg.setAttribute('viewBox', `0 0 10 ${10 * height / width}`);
+          svg.addEventListener('mousedown', startDrag, false);
+          this.create(val);
+        }
+      }.bind(this)
+    );
     // this.updates.push( function () {
     //   for (let i = 0; i < this.n_masses; ++i) {
     //     this.sliders[i].value = this.normal_amplitudes[i];
@@ -1224,13 +1245,13 @@ class System {
         this.initial_phases[i] = 0;
       }
     }
-    if (this.sliders) {
-      for (let i = 0; i < this.n_masses; ++i) {
+    for (let i = 0; i < this.n_masses; ++i) {
+      if (this.sliders && this.sliders[i]) {
         this.sliders[i].value = this.normal_amplitudes[i];
       }
     }
-    if (this.phase_sliders) {
-      for (let i = 0; i < this.n_masses; ++i) {
+    for (let i = 0; i < this.n_masses; ++i) {
+      if (this.phase_sliders && this.phase_sliders[i]) {
         this.phase_sliders[i].value = this.initial_phases[i];
       }
     }
@@ -1254,6 +1275,23 @@ class System {
     } else {
       return false;
     }
+  }
+
+  recalculate_initial_positions() {
+    for (let i = 0; i < this.n_masses; ++i) {
+      if (this.sim.masses[i] !== elements.get(selectedElement)) {
+        this.sim.masses[i].initial_position.y = this.masses_zero_positions[i];
+        for (let j = 0; j < this.n_masses; ++j) {
+          this.sim.masses[i].initial_position.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        }
+      }
+    }
+  }
+
+  reset_to_initial_positions() {
+    this.sim.reset();
+    running = false;
+    this.time = 0;
   }
 }
 

@@ -234,6 +234,17 @@ class Box {
     this.realVel = Vector2.scale(1 / dt, vec2(this.pos.x - this.lastPos.x, this.pos.y - this.lastPos.y));
     this.lastPos = vec2(this.pos.x, this.pos.y);
   }
+
+  little_update() {
+    for (let c of this.constraints) {
+      c.constrain(this);
+    }
+    this.el.setAttribute('x', this.pos.x - this.size.x / 2);
+    this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
+    for (let l of this.listeners) {
+      l();
+    }
+  }
 }
 
 function spring_between(o1, o2) {
@@ -478,6 +489,7 @@ class Simulation {
     for (let b of this.boxes) {
       svg.appendChild(b.el);
     }
+    this.masses = this.boxes;
   }
 
   update(dt) {
@@ -522,7 +534,7 @@ let simulations = [];
 // simulations.push(new Simulation(1, 12, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 30));
 // simulations.push(new Simulation(1, 15, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 20, undefined, 40));
 
-simulations.push(new Simulation(7, 0, 10, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 700));
+simulations.push(new Simulation(2, 0, 10, 1.5, 4.5, { 'type': 'vertical', 'streched_springs': true }, 700));
 // simulations.push(new Simulation(1, 3, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 2));
 // simulations.push(new Simulation(1, 6, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 20));
 // simulations.push(new Simulation(1, 9, { 'left_enabled': false, 'type': 'horizontal', 'streched_springs': false, 'air_viscosity': true }, 200, undefined, 50));
@@ -1030,7 +1042,7 @@ class WaveMarker {
 let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
 
 class System {
-  constructor() {
+  constructor(n_masses = 2) {
     // this.stop_button = new Button();
     // this.simulation_speed_slider = new Slider();
     // this.initial_positions_button = new Button();
@@ -1040,9 +1052,75 @@ class System {
     // this.show_springs_check = new CheckBox();
     // this.show_phases_check = new CheckBox();
 
-    this.sim = new Simulation()
+    this.n_masses = n_masses;
+    this.k = 700;
+    this.m = 20;
+
+    this.sim = new Simulation(this.n_masses, 0, 10, 4.5, 6, {}, this.k);
+
+    this.normal_frequencies = [];
+    this.eigenvectors = [];
+    
+    for (let i = 1; i <= this.n_masses; ++i) {
+      this.normal_frequencies[i - 1] = Math.sqrt(2 * this.k / this.m * Math.sin(Math.PI / 2 * i / (this.n_masses + 1)));
+      let ev_i = [];
+      for (let j = 1; j <= this.n_masses; ++j) {
+        ev_i[j - 1] = Math.sin(i * Math.PI * j / (this.n_masses + 1));
+      }
+      this.eigenvectors[i - 1] = ev_i;
+    }
+    this.factor = 0;
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
+    }
+
+    console.log(this.normal_frequencies);
+    console.log(this.eigenvectors);
+    
+    running = false;
+
+    this.normal_amplitudes = [];
+    this.time = 0;
+
+    this.masses_zero_positions = [];
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.masses_zero_positions[i] = this.sim.masses[i].initial_position.y;
+    }
+    this.changed_initial_positions();
+
+  }
+
+  update(dt) {
+    if (running === false) {
+      for (let m of this.sim.masses) {
+        m.initial_position = m.pos.copy();
+        this.changed_initial_positions();
+      }
+    } else {
+      this.time += dt;
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+        for (let j = 0; j < this.n_masses; ++j) {
+          this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time);
+        }
+        this.sim.masses[i].little_update();
+      }
+    }
+  }
+
+  changed_initial_positions() {
+    // let positions = [];
+    for (let i = 0; i < this.n_masses; ++i) {
+      // positions[i] = this.sim.masses[i].initial_position;
+      this.normal_amplitudes[i] = 0;
+      for (let j = 0; j < this.n_masses; ++j) {
+        this.normal_amplitudes[i] += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+      }
+    }
   }
 }
+
+let sys = new System();
 
 function loop() {
   let timenow = performance.now();
@@ -1061,6 +1139,7 @@ function loop() {
   } else {
     paused.style.setProperty('opacity', '1');
   }
+  sys.update(timePerFrame * simulation_speed.value / 1000);
   if (again) {
     requestAnimationFrame(loop);
   }

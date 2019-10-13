@@ -1,6 +1,7 @@
 let running = true;
 let again = true;
 
+let realsvg = document.getElementById('graphics');
 let svg = document.getElementById('graphics');
 
 let width;
@@ -1056,10 +1057,32 @@ class WaveMarker {
 
 class System {
   constructor(n_masses = 3) {
+    this.first = true;
     this.create(n_masses);
   }
 
   create(n_masses) {
+    if (this.first) {
+      this.first = false;
+      // svg = realsvg;
+      this.n_masses_slider = new Slider(vec2(7, 6.5), 1.5, 1, 10, true, 'Number of Masses', true, .7, true, n_masses);
+      this.n_masses_slider.addListener(
+        function () {
+          if (this.n_masses_slider.value !== this.n_masses) {
+            let val = this.n_masses_slider.value;
+            // realsvg.removeChild(svg);
+            this.create(val);
+          }
+        }.bind(this)
+      );
+      // svg = this.mysvg;
+
+    } else {
+      realsvg.removeChild(svg);
+    }
+    svg = document.createElementNS(nssvg, 'svg');
+    realsvg.appendChild(svg);
+    // this.mysvg = svg;
     // this.stop_button = new Button();
     // this.simulation_speed_slider = new Slider();
     // this.initial_positions_button = new Button();
@@ -1155,22 +1178,6 @@ class System {
         this.recalculate_initial_positions();
       }.bind(this));
     }
-
-    this.n_masses_slider = new Slider(vec2(7, 6.5), 1.5, 1, 10, true, 'Number of Masses', true, .7, true, this.n_masses);
-    this.n_masses_slider.addListener(
-      function () {
-        if (this.n_masses_slider.value !== this.n_masses) {
-          let val = this.n_masses_slider.value;
-          document.body.removeChild(svg);
-          svg = document.createElementNS(nssvg, 'svg');
-          document.body.appendChild(svg);
-          svg.setAttribute('id', 'graphics');
-          svg.setAttribute('viewBox', `0 0 10 ${10 * height / width}`);
-          svg.addEventListener('mousedown', startDrag, false);
-          this.create(val);
-        }
-      }.bind(this)
-    );
     // this.updates.push( function () {
     //   for (let i = 0; i < this.n_masses; ++i) {
     //     this.sliders[i].value = this.normal_amplitudes[i];
@@ -1289,6 +1296,7 @@ class System {
   }
 
   reset_to_initial_positions() {
+    this.recalculate_initial_positions();
     this.sim.reset();
     running = false;
     this.time = 0;

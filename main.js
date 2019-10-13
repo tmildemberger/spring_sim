@@ -573,7 +573,7 @@ class Slider {
     this.len = len;
 
     this.val = val1;
-    
+
     this.val1 = val1;
     this.val2 = val2;
 
@@ -1133,15 +1133,26 @@ class System {
     this.sliders = [];
 
     for (let i = 0; i < this.n_masses; ++i) {
-      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, -3, 3, false, '', false, .7, false, 0);
-      this.sliders[i].addListener( function() {this.normal_amplitudes[i] = this.sliders[i].value; }.bind(this) );
+      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 2, false, '', false, .7, false, 0);
+      this.sliders[i].addListener(function () {
+      this.normal_amplitudes[i] = this.sliders[i].value;
+        for (let i = 0; i < this.n_masses; ++i) {
+          if (this.sim.masses[i] !== elements.get(selectedElement)) {
+            this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+            for (let j = 0; j < this.n_masses; ++j) {
+              this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+            }
+            this.sim.masses[i].little_update();
+          }
+        }
+      }.bind(this));
     }
 
-    this.updates.push( function () {
-      for (let i = 0; i < this.n_masses; ++i) {
-        this.sliders[i].value = this.normal_amplitudes[i];
-      }
-    }.bind(this));
+    // this.updates.push( function () {
+    //   for (let i = 0; i < this.n_masses; ++i) {
+    //     this.sliders[i].value = this.normal_amplitudes[i];
+    //   }
+    // }.bind(this));
 
   }
 
@@ -1187,6 +1198,10 @@ class System {
 
   }
 
+  move_masses_to_the_correct_place() {
+    
+  }
+
   changed_initial_positions(copy) {
     // let positions = [];
     if (copy) {
@@ -1205,6 +1220,11 @@ class System {
         this.normal_amplitudes[i] = -this.normal_amplitudes[i];
       } else {
         this.initial_phases[i] = 0;
+      }
+    }
+    if (this.sliders) {
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.sliders[i].value = this.normal_amplitudes[i];
       }
     }
     // this.time = 0;

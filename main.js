@@ -449,6 +449,8 @@ class Simulation {
 
     let space_per_spring = (this.width - .4 - this.n_masses * this.mm) / (this.n_masses + 1);
 
+    // this.k *= 50 / 49;
+
     this.boxes = [];
     for (let i = 0; i < this.n_masses; ++i) {
       // this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
@@ -800,7 +802,7 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
 // let halves_slider = new Slider(vec2(2, 7), 2, 1, 24, true, 'n_half_T', true, 1, true);
 // let amplitude_slider = new Slider(vec2(5, 7), 2, -2, 2, true, 'amplitude', false, 1, true);
 // let width_slider = new Slider(vec2(8, 5), 2, 0, 2, false, 'width', false, 1, true);
-let simulation_speed = new Slider(vec2(1, 6.5), 2, .1, 4, true, 'simulation speed', false, 1, false, 1);
+let simulation_speed = new Slider(vec2(1, 6.5), 4, .001, 2, true, 'simulation speed', false, 1, false, 1);
 
 // let sine = sine_between(vec2(2, 5), vec2(3, 5), { value: 4 }, "#888", { value: .1 }, { value: 1 });
 // let sine2 = sine_between(vec2(5, 5), vec2(7, 5), halves_slider, "#888", width_slider, amplitude_slider);
@@ -1004,12 +1006,13 @@ class Button {
 // let btn = new Button(vec2(4, 6.5), vec2(.8, .4), t);
 
 class Waves {
-  constructor(pos, len, number, color, color2, size, amplitude) {
+  constructor(pos, len, number, color, color2, size, amplitude, width = { value: 0.02 }) {
     this.pos = pos.copy();
     this.pos2 = vec2(this.pos.x + len, this.pos.y);
     this.size = size.copy();
 
     this.amplitude = amplitude;
+    this.width = width;
 
     this.len = len;
     this.number = number;
@@ -1017,7 +1020,7 @@ class Waves {
     this.color = color;
     this.color2 = color2;
 
-    this.sine = sine_between(this.pos, this.pos2, { value: this.number }, this.color, { value: 0.02 }, this.amplitude);
+    this.sine = sine_between(this.pos, this.pos2, { value: this.number }, this.color, this.width, this.amplitude);
 
     this.left = new Box(this.pos, this.size, 1, vec2(0, 0), this.color2);
     this.left.constraints.push(horizontalConstraint);
@@ -1090,18 +1093,18 @@ class System {
     }
     svg = document.createElementNS(nssvg, 'svg');
     realsvg.appendChild(svg);
-    
+
     this.n_masses = n_masses;
     this.k = 700;
     this.m = 20;
-    
+
     this.sim = new Simulation(this.n_masses, 0, 10, 4.5, 6, {}, this.k);
-    
+
     this.normal_frequencies = [];
     this.eigenvectors = [];
-    
+
     for (let i = 1; i <= this.n_masses; ++i) {
-      this.normal_frequencies[i - 1] = Math.sqrt(2 * this.k / this.m * Math.sin(Math.PI / 2 * i / (this.n_masses + 1)));
+      this.normal_frequencies[i - 1] = 2 * Math.sqrt(this.k / this.m) * Math.sin(Math.PI / 2 * i / (this.n_masses + 1));
       let ev_i = [];
       for (let j = 1; j <= this.n_masses; ++j) {
         ev_i[j - 1] = Math.sin(i * Math.PI * j / (this.n_masses + 1));
@@ -1121,17 +1124,17 @@ class System {
     this.normal_amplitudes = [];
     this.initial_phases = [];
     this.time = 0;
-    
+
     this.dragging = false;
-    
+
     this.masses_zero_positions = [];
     for (let i = 0; i < this.n_masses; ++i) {
       this.masses_zero_positions[i] = this.sim.masses[i].initial_position.y;
-      
+
       this.initial_phases[i] = 0;
     }
     this.changed_initial_positions();
-    
+
     let stop_caption = document.createElementNS(nssvg, 'text');
     stop_caption.setAttribute('x', 9);
     stop_caption.setAttribute('y', height - 7.62);
@@ -1141,8 +1144,8 @@ class System {
     stop_caption.setAttribute('fill', "#888");
     stop_caption.textContent = 'Parar';
     this.stop_button = new Button(vec2(9, 8), vec2(.8, .4), stop_caption);
-    this.stop_button.addListener(function () { running = ! running; });
-    
+    this.stop_button.addListener(function () { running = !running; });
+
     let initial_caption = document.createElementNS(nssvg, 'text');
     initial_caption.setAttribute('x', 9);
     initial_caption.setAttribute('y', height - 6.62);
@@ -1153,7 +1156,7 @@ class System {
     initial_caption.textContent = 'Posições iniciais';
     this.initial_positions_button = new Button(vec2(9, 7), vec2(.8, .4), initial_caption);
     this.initial_positions_button.addListener(function () { this.reset_to_initial_positions(); this.move_masses_to_the_correct_place(); }.bind(this));
-    
+
     let zero_caption = document.createElementNS(nssvg, 'text');
     zero_caption.setAttribute('x', 9);
     zero_caption.setAttribute('y', height - 5.62);
@@ -1164,17 +1167,17 @@ class System {
     zero_caption.textContent = 'Zerar Posições';
     this.zero_positions = new Button(vec2(9, 6), vec2(.8, .4), zero_caption);
     this.zero_positions.addListener(function () { this.reset_to_zero_positions(); this.changed_initial_positions(); }.bind(this));
-    
+
     // this.frame_advance_button = new Button();
-    
+
     // this.show_springs_check = new CheckBox();
     // this.show_phases_check = new CheckBox();
-    
+
     this.markers = [];
     for (let i = 0; i < this.n_masses; ++i) {
       this.markers[i] = new WaveMarker(vec2(10 / (this.n_masses + 1) * (i + 1), 4), .8, i + 1, 'blue', '#222', 0.02);
     }
-    
+
     this.waves = [];
     this.updates = [];
 
@@ -1194,7 +1197,7 @@ class System {
             f();
           }
         }
-      });
+      }, { value: 0.035 });
       this.updates.push(this.waves[i].amplitude.update.bind(this.waves[i].amplitude));
       // this.waves = new WaveMarker(vec2(10 / 11 * (i + 1), 1), .8, i + 1, 'blue', '#222', 0.05);
     }
@@ -1202,7 +1205,7 @@ class System {
     this.sliders = [];
 
     for (let i = 0; i < this.n_masses; ++i) {
-      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 2, false, '', false, .7, false, 0);
+      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, 0);
       this.sliders[i].addListener(function () {
         this.normal_amplitudes[i] = this.sliders[i].value;
         this.move_masses_to_the_correct_place();
@@ -1307,7 +1310,7 @@ class System {
     // this.time = 0;
     // this.update(0);
   }
-  
+
   has_mass(box) {
     if (this.sim.masses.find(x => x === box)) {
       return true;

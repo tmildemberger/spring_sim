@@ -267,10 +267,10 @@ function spring_between(o1, o2) {
 
   let len = Vector2.subtract(p2, p1);
 
-  let sides = Vector2.scale(0.05, len);
-  let part = Vector2.scale(0.09, len);
+  let sides = Vector2.scale(0.15, len);
+  let part = Vector2.scale(0.070, len);
 
-  let amplitude = .25;
+  let amplitude = .20;
 
   let c1 = Vector2.rotate(vec2(.48 * part.length(), amplitude), part.angle());
   let c2 = Vector2.rotate(vec2(.52 * part.length(), amplitude), part.angle());
@@ -571,7 +571,7 @@ function between(num, a, b) {
 }
 
 class Slider {
-  constructor(pos1, len, val1, val2, horizontal = true, label = '', round = true, size = 1, invert = true, initial_value) {
+  constructor(pos1, len, val1, val2, horizontal = true, label = '', round = true, size = 1, invert = true, initial_value, accept_outside = false) {
     this.pos1 = pos1.copy();
     this.len = len;
 
@@ -592,6 +592,7 @@ class Slider {
     if (this.round) { this.val = Math.round(this.val); }
 
     this.horizontal = horizontal;
+    this.accept_outside = accept_outside;
 
     this.guide = document.createElementNS(nssvg, 'line');
     this.guide.setAttribute('x1', this.pos1.x);
@@ -708,11 +709,18 @@ class Slider {
   }
 
   set value(val) {
-    let displacement = (val - this.val) / (this.val2 - this.val1) * this.len;
+    // let displacement = (val - this.val) / (this.val2 - this.val1) * this.len;
+    let new_pos = (val - this.val1) / (this.val2 - this.val1) * this.len + (this.horizontal ? this.pos1.x : this.pos1.y);
     if (this.horizontal) {
-      this.sl.x += displacement;
+      this.sl.x = new_pos;
     } else {
-      this.sl.y -= displacement;
+      this.sl.y = height - new_pos;
+    }
+    if (this.accept_outside) {
+      this.val = val;
+      for (let f of this.listeners) {
+        f();
+      }
     }
   }
 }
@@ -1205,7 +1213,7 @@ class System {
     this.sliders = [];
 
     for (let i = 0; i < this.n_masses; ++i) {
-      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, 0);
+      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, 0, true);
       this.sliders[i].addListener(function () {
         this.normal_amplitudes[i] = this.sliders[i].value;
         this.move_masses_to_the_correct_place();

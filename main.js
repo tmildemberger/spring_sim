@@ -956,6 +956,8 @@ class Button {
 
     this.caption_el = caption_element;
 
+    this.listeners = [];
+
     this.button_el = document.createElementNS(nssvg, 'rect');
     this.button_el.setAttribute('x', this.pos.x - this.size.x / 2);
     this.button_el.setAttribute('y', height - (this.pos.y - this.size.y / 2));
@@ -977,8 +979,14 @@ class Button {
     svg.appendChild(this.button_el);
   }
 
+  addListener(l) {
+    this.listeners.push(l);
+  }
+
   clicked() {
-    console.log(this);
+    for (let l of this.listeners) {
+      l();
+    }
   }
 }
 
@@ -1082,25 +1090,16 @@ class System {
     }
     svg = document.createElementNS(nssvg, 'svg');
     realsvg.appendChild(svg);
-    // this.mysvg = svg;
-    // this.stop_button = new Button();
-    // this.simulation_speed_slider = new Slider();
-    // this.initial_positions_button = new Button();
-    // this.frame_advance_button = new Button();
-    // this.zero_positions = new Button();
-    // this.n_masses_slider = new Slider();
-    // this.show_springs_check = new CheckBox();
-    // this.show_phases_check = new CheckBox();
-
+    
     this.n_masses = n_masses;
     this.k = 700;
     this.m = 20;
-
+    
     this.sim = new Simulation(this.n_masses, 0, 10, 4.5, 6, {}, this.k);
-
+    
     this.normal_frequencies = [];
     this.eigenvectors = [];
-
+    
     for (let i = 1; i <= this.n_masses; ++i) {
       this.normal_frequencies[i - 1] = Math.sqrt(2 * this.k / this.m * Math.sin(Math.PI / 2 * i / (this.n_masses + 1)));
       let ev_i = [];
@@ -1114,31 +1113,74 @@ class System {
       this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
     }
 
-    console.log(this.normal_frequencies);
-    console.log(this.eigenvectors);
+    // console.log(this.normal_frequencies);
+    // console.log(this.eigenvectors);
 
     running = false;
 
     this.normal_amplitudes = [];
     this.initial_phases = [];
     this.time = 0;
-
+    
     this.dragging = false;
-
+    
     this.masses_zero_positions = [];
     for (let i = 0; i < this.n_masses; ++i) {
       this.masses_zero_positions[i] = this.sim.masses[i].initial_position.y;
-
+      
       this.initial_phases[i] = 0;
     }
     this.changed_initial_positions();
-
+    
+    let stop_caption = document.createElementNS(nssvg, 'text');
+    stop_caption.setAttribute('x', 9);
+    stop_caption.setAttribute('y', height - 7.62);
+    stop_caption.setAttribute('font-size', .18);
+    stop_caption.setAttribute('text-anchor', 'middle');
+    stop_caption.setAttribute('alignment-baseline', 'middle');
+    stop_caption.setAttribute('fill', "#888");
+    stop_caption.textContent = 'Parar';
+    this.stop_button = new Button(vec2(9, 8), vec2(.8, .4), stop_caption);
+    this.stop_button.addListener(function () { running = ! running; });
+    
+    let initial_caption = document.createElementNS(nssvg, 'text');
+    initial_caption.setAttribute('x', 9);
+    initial_caption.setAttribute('y', height - 6.62);
+    initial_caption.setAttribute('font-size', .18);
+    initial_caption.setAttribute('text-anchor', 'middle');
+    initial_caption.setAttribute('alignment-baseline', 'middle');
+    initial_caption.setAttribute('fill', "#888");
+    initial_caption.textContent = 'Posições iniciais';
+    this.initial_positions_button = new Button(vec2(9, 7), vec2(.8, .4), initial_caption);
+    this.initial_positions_button.addListener(function () { this.reset_to_initial_positions(); this.move_masses_to_the_correct_place(); }.bind(this));
+    
+    let zero_caption = document.createElementNS(nssvg, 'text');
+    zero_caption.setAttribute('x', 9);
+    zero_caption.setAttribute('y', height - 5.62);
+    zero_caption.setAttribute('font-size', .18);
+    zero_caption.setAttribute('text-anchor', 'middle');
+    zero_caption.setAttribute('alignment-baseline', 'middle');
+    zero_caption.setAttribute('fill', "#888");
+    zero_caption.textContent = 'Zerar Posições';
+    this.zero_positions = new Button(vec2(9, 6), vec2(.8, .4), zero_caption);
+    this.zero_positions.addListener(function () { this.reset_to_zero_positions(); this.changed_initial_positions(); }.bind(this));
+    
+    // this.frame_advance_button = new Button();
+    
+    // this.show_springs_check = new CheckBox();
+    // this.show_phases_check = new CheckBox();
+    
+    this.markers = [];
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.markers[i] = new WaveMarker(vec2(10 / (this.n_masses + 1) * (i + 1), 4), .8, i + 1, 'blue', '#222', 0.02);
+    }
+    
     this.waves = [];
     this.updates = [];
 
     for (let i = 0; i < this.n_masses; ++i) {
 
-      this.waves[i] = new Waves(vec2(10 / (this.n_masses + 1) * (i + 1) - .4, 1), .8, i + 1, 'blue', '#222', vec2(.05, .08), {
+      this.waves[i] = new Waves(vec2(10 / (this.n_masses + 1) * (i + 1) - .4, .7), .8, i + 1, 'blue', '#222', vec2(.05, .08), {
         get value() { return this.val(); },
         val: function () {
           return .5 * this.normal_amplitudes[i] * Math.cos(this.normal_frequencies[i] * this.time - this.initial_phases[i])
@@ -1265,17 +1307,7 @@ class System {
     // this.time = 0;
     // this.update(0);
   }
-
-  changed_normal_amplitudes() {
-    // for (let i = 0; i < this.n_masses; ++i) {
-    //   this.sim.masses[i].initial_position.y = this.masses_zero_positions[i];
-    //   for (let j = 0; j < this.n_masses; ++j) {
-    //     this.sim.masses[i].initial_position.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(- this.initial_phases[j]);
-    //   }
-    //   this.update(0);
-    // }
-  }
-
+  
   has_mass(box) {
     if (this.sim.masses.find(x => x === box)) {
       return true;
@@ -1300,6 +1332,12 @@ class System {
     this.sim.reset();
     running = false;
     this.time = 0;
+  }
+
+  reset_to_zero_positions() {
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+    }
   }
 }
 

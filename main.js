@@ -1314,7 +1314,7 @@ class System {
       // positions[i] = this.sim.masses[i].initial_position;
       this.normal_amplitudes[i] = 0;
       for (let j = 0; j < this.n_masses; ++j) {
-        this.normal_amplitudes[i] += (this.sim.masses[j].pos.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+        this.normal_amplitudes[i] += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
       }
       if (this.normal_amplitudes[i] < 0) {
         this.initial_phases[i] = Math.PI;

@@ -246,6 +246,7 @@ class Box {
     this.x += dt * this.vel.x;
     this.y += -dt * this.vel.y;
     this.realVel = Vector2.scale(1 / dt, vec2(this.pos.x - this.lastPos.x, this.pos.y - this.lastPos.y));
+    if (Vector2.subtract(this.pos, this.lastPos).length() > .5) console.log('jump');
     this.lastPos = vec2(this.pos.x, this.pos.y);
   }
 
@@ -448,6 +449,7 @@ class Simulation {
     this.objs = [];
 
     let space_per_spring = (this.width - .4 - this.n_masses * this.mm) / (this.n_masses + 1);
+    let original_length = space_per_spring / 1;
 
     // this.k *= 50 / 49;
 
@@ -469,7 +471,7 @@ class Simulation {
     this.springs = [];
 
     for (let i = 1; i < n_masses; ++i) {
-      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'red', this.options.streched_springs ? space_per_spring / 50 : undefined);
+      this.springs[i] = connectWithSpring(this.boxes[i - 1], this.boxes[i], this.k, 'red', this.options.streched_springs ? original_length : undefined);
       this.objs.push(this.springs[i]);
     }
 
@@ -481,7 +483,7 @@ class Simulation {
       this.objs.push(left_border);
 
       if (this.options.left_connected) {
-        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'red', this.options.streched_springs ? space_per_spring / 50 : undefined);
+        let s0 = connectWithSpring(left_border, this.boxes[0], this.k, 'red', this.options.streched_springs ? original_length : undefined);
         this.objs.push(s0);
         this.springs[0] = s0;
       }
@@ -496,7 +498,7 @@ class Simulation {
       this.objs.push(right_border);
 
       if (this.options.right_connected) {
-        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'red', this.options.streched_springs ? space_per_spring / 50 : undefined, false);
+        let sN = connectWithSpring(this.boxes[this.boxes.length - 1], right_border, this.k, 'red', this.options.streched_springs ? original_length : undefined, false);
         this.objs.push(sN);
         this.springs[this.springs.length] = sN;
       }
@@ -506,6 +508,12 @@ class Simulation {
       svg.appendChild(b.el);
     }
     this.masses = this.boxes;
+  }
+
+  only_calculate(dt) {
+    for (const o of this.objs) {
+      o.calculate(dt);
+    }
   }
 
   update(dt) {
@@ -1123,9 +1131,19 @@ class System {
     for (let i = 0; i < this.n_masses; ++i) {
       this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
     }
+    for (let i = 0; i < this.n_masses; ++i) {
+      for (let j = 0; j < this.n_masses; ++j) {
+        this.eigenvectors[i][j] /= Math.sqrt(this.factor);
+      }
+    }
+    this.factor = 0;
+    for (let i = 0; i < this.n_masses; ++i) {
+      this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
+    }
 
     // console.log(this.normal_frequencies);
-    // console.log(this.eigenvectors);
+    console.log(this.factor);
+    console.log(this.eigenvectors);
 
     running = false;
 
@@ -1175,7 +1193,7 @@ class System {
     zero_caption.setAttribute('fill', "#888");
     zero_caption.textContent = 'Zerar Posições';
     this.zero_positions = new Button(vec2(9, 6), vec2(.8, .4), zero_caption);
-    this.zero_positions.addListener(function () { this.reset_to_zero_positions(); this.changed_initial_positions(); }.bind(this));
+    this.zero_positions.addListener(function () { this.reset_to_zero_positions(); this.changed_initial_positions(true); }.bind(this));
 
     // this.frame_advance_button = new Button();
 
@@ -1249,25 +1267,27 @@ class System {
       // }
     } else {
       if (this.dragging) {
-        if (this.not_dragging) {
-          // this.move_masses_to_the_correct_place(dt);
-          // if (this.not_dragging) {
-            //   for (let m of this.sim.masses) {
-              //     m.vel = vec2(0, 0);
-              // for (let i = 0; i < this.n_masses; ++i) {
-          //   m.vel.y += - this.normal_frequencies[i] * this.normal_amplitudes[i] * Math.sin(this.normal_frequencies[i] * this.time - this.initial_phases[i]);
-          // }
-          // m.vel.y /= this.n_masses;
-          //   }
-          this.not_dragging = false;
-        }
-        // this.sim.update(dt);
+        // if (this.not_dragging) {
+        // this.move_masses_to_the_correct_place(dt);
+        // if (this.not_dragging) {
+        //   for (let m of this.sim.masses) {
+        //     m.vel = vec2(0, 0);
+        // for (let i = 0; i < this.n_masses; ++i) {
+        //   m.vel.y += - this.normal_frequencies[i] * this.normal_amplitudes[i] * Math.sin(this.normal_frequencies[i] * this.time - this.initial_phases[i]);
+        // }
+        // m.vel.y /= this.n_masses;
+        //   }
+        //   this.not_dragging = false;
+        // }
+        this.sim.update(dt);
         this.changed_initial_positions(true);
         this.time = 0;
       } else {
-        this.not_dragging = true;
+        this.sim.only_calculate(dt);
+        // this.not_dragging = true;
         this.time += dt;
-        this.move_masses_to_the_correct_place(dt);
+
+        this.move_masses_to_the_correct_place();
       }
     }
     for (let u of this.updates) {
@@ -1287,18 +1307,14 @@ class System {
 
   }
 
-  move_masses_to_the_correct_place(dt) {
+  move_masses_to_the_correct_place() {
     for (let i = 0; i < this.n_masses; ++i) {
       if (this.sim.masses[i] !== elements.get(selectedElement)) {
-        let temp = this.sim.masses[i].pos.y;
         this.sim.masses[i].pos.y = this.masses_zero_positions[i];
         for (let j = 0; j < this.n_masses; ++j) {
           this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
         }
         this.sim.masses[i].little_update();
-        if (dt) {
-          this.sim.masses[i].vel.y = (this.sim.masses[i].pos.y - temp) / dt;
-        }
       }
     }
   }

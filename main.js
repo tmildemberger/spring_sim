@@ -108,8 +108,8 @@ function startDrag(event) {
     offset.y -= obj.y;
 
     if (sys.has_mass(elements.get(selectedElement))) {
-      sys.changed_initial_positions(true);
       sys.dragging = true;
+      sys.changed_initial_positions(true);
     }
   }
 }
@@ -449,7 +449,7 @@ class Simulation {
     this.objs = [];
 
     let space_per_spring = (this.width - .4 - this.n_masses * this.mm) / (this.n_masses + 1);
-    let original_length = space_per_spring / 1;
+    let original_length = space_per_spring / 1000;
 
     // this.k *= 50 / 49;
 
@@ -1234,9 +1234,11 @@ class System {
     for (let i = 0; i < this.n_masses; ++i) {
       this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, 0, true);
       this.sliders[i].addListener(function () {
-        this.normal_amplitudes[i] = this.sliders[i].value;
-        this.move_masses_to_the_correct_place();
-        this.recalculate_initial_positions();
+        if (!this.dragging) {
+          this.normal_amplitudes[i] = this.sliders[i].value;
+          this.move_masses_to_the_correct_place();
+          this.recalculate_initial_positions();
+        }
       }.bind(this));
     }
 
@@ -1245,9 +1247,11 @@ class System {
     for (let i = 0; i < this.n_masses; ++i) {
       this.phase_sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 1), .8, -Math.PI, Math.PI, false, '', false, .7, false, 0);
       this.phase_sliders[i].addListener(function () {
-        this.initial_phases[i] = this.phase_sliders[i].value;
-        this.move_masses_to_the_correct_place();
-        this.recalculate_initial_positions();
+        if (!this.dragging) {
+          this.initial_phases[i] = this.phase_sliders[i].value;
+          this.move_masses_to_the_correct_place();
+          this.recalculate_initial_positions();
+        }
       }.bind(this));
     }
     // this.updates.push( function () {
@@ -1267,24 +1271,24 @@ class System {
       // }
     } else {
       if (this.dragging) {
-        // if (this.not_dragging) {
-        // this.move_masses_to_the_correct_place(dt);
-        // if (this.not_dragging) {
-        //   for (let m of this.sim.masses) {
-        //     m.vel = vec2(0, 0);
-        // for (let i = 0; i < this.n_masses; ++i) {
-        //   m.vel.y += - this.normal_frequencies[i] * this.normal_amplitudes[i] * Math.sin(this.normal_frequencies[i] * this.time - this.initial_phases[i]);
-        // }
-        // m.vel.y /= this.n_masses;
-        //   }
-        //   this.not_dragging = false;
-        // }
+        if (this.not_dragging) {
+          // this.move_masses_to_the_correct_place(dt);
+          // if (this.not_dragging) {
+          for (let m of this.sim.masses) {
+            m.vel = vec2(0, 0);
+            for (let i = 0; i < this.n_masses; ++i) {
+              m.vel.y += - this.normal_frequencies[i] * this.normal_amplitudes[i] * Math.sin(this.normal_frequencies[i] * this.time - this.initial_phases[i]);
+            }
+            // m.vel.y /= this.n_masses;
+          }
+          this.not_dragging = false;
+        }
         this.sim.update(dt);
         this.changed_initial_positions(true);
         this.time = 0;
       } else {
         this.sim.only_calculate(dt);
-        // this.not_dragging = true;
+        this.not_dragging = true;
         this.time += dt;
 
         this.move_masses_to_the_correct_place();

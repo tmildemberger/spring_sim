@@ -142,6 +142,51 @@ svg.addEventListener('mousedown', startDrag, false);
 document.addEventListener('mousemove', drag, false);
 document.addEventListener('mouseup', endDrag, false);
 
+// function startDragTouch(event) {
+//   if (event.target.classList.contains('draggable')) {
+//     selectedElement = event.target;
+//     offset = getMousePosition(event);
+
+//     let obj = elements.get(selectedElement);
+//     offset.x -= obj.x;
+//     offset.y -= obj.y;
+
+//     if (sys.has_mass(elements.get(selectedElement))) {
+//       sys.dragging = true;
+//       sys.update_velocities();
+//       sys.changed_initial_positions(true, true);
+//     }
+//   }
+// }
+
+// function dragTouch(event) {
+//   if (selectedElement) {
+//     event.preventDefault();
+//     let coord = getMousePosition(event);
+
+//     let obj = elements.get(selectedElement);
+//     obj.x = coord.x - offset.x;
+//     obj.y = coord.y - offset.y;
+
+//     if (sys.has_mass(elements.get(selectedElement))) {
+//       sys.changed_initial_positions(true, true);
+//     }
+//   }
+// }
+
+// function endDragTouch(event) {
+//   if (sys.has_mass(elements.get(selectedElement))) {
+//     sys.changed_initial_positions(true, true);
+//     sys.dragging = false;
+//   }
+//   selectedElement = null;
+// }
+
+svg.addEventListener('touchstart', startDrag, false);
+document.addEventListener('touchmove', drag, false);
+document.addEventListener('touchcancel', endDrag, false);
+document.addEventListener('touchend', endDrag, false);
+
 class Box {
   constructor(pos, size, mass, vel, color, colorStroke, strokeWidth = .1) {
     this.initial_position = pos.copy();

@@ -1,6 +1,7 @@
 body {
     margin: 0;
     overflow: hidden;
+    touch-action: none;
 }
 
 .static {
@@ -9,6 +10,7 @@ body {
 
 .draggable {
     cursor: move;
+    touch-action: none;
 }
 
 .radio:hover {

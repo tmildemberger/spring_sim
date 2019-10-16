@@ -145,8 +145,8 @@ document.addEventListener('mouseup', endDrag, false);
 function startDragTouch(event) {
   if (event.target.classList.contains('draggable')) {
     selectedElement = event.target;
-    offset = getMousePosition(event);
-    paused.textContent = offset.x.toFixed(2) + " " + offset.y.toFixed(2);
+    offset = getMousePosition(event.changedTouches[0]);
+    // paused.textContent = offset.x.toFixed(2) + " " + offset.y.toFixed(2);
     
     let obj = elements.get(selectedElement);
     offset.x -= obj.x;
@@ -163,8 +163,8 @@ function startDragTouch(event) {
 function dragTouch(event) {
   if (selectedElement) {
     event.preventDefault();
-    let coord = getMousePosition(event);
-    paused.textContent = coord.x.toFixed(2) + " " + coord.y.toFixed(2);
+    let coord = getMousePosition(event.changedTouches[0]);
+    // paused.textContent = coord.x.toFixed(2) + " " + coord.y.toFixed(2);
     
     let obj = elements.get(selectedElement);
     obj.x = coord.x - offset.x;

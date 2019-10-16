@@ -889,7 +889,7 @@ class RadioGroup {
 
   set value(val) {
     let ix = this.radios.findIndex(x => x.value === val);
-    if (ix) {
+    if (ix !== -1) {
       this.selected = ix;
     }
   }

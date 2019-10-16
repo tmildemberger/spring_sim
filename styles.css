@@ -2,6 +2,7 @@ body {
     margin: 0;
     overflow: hidden;
     touch-action: none;
+    font-family: 'Noto Sans', sans-serif;
 }
 
 .static {

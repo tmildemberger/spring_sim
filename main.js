@@ -146,7 +146,6 @@ function startDragTouch(event) {
   if (event.target.classList.contains('draggable')) {
     selectedElement = event.target;
     offset = getMousePosition(event.changedTouches[0]);
-    // paused.textContent = offset.x.toFixed(2) + " " + offset.y.toFixed(2);
     
     let obj = elements.get(selectedElement);
     offset.x -= obj.x;
@@ -164,8 +163,7 @@ function dragTouch(event) {
   if (selectedElement) {
     event.preventDefault();
     let coord = getMousePosition(event.changedTouches[0]);
-    // paused.textContent = coord.x.toFixed(2) + " " + coord.y.toFixed(2);
-    
+
     let obj = elements.get(selectedElement);
     obj.x = coord.x - offset.x;
     obj.y = coord.y - offset.y;
@@ -206,7 +204,7 @@ class Box {
     this.vel = vel.copy();
     this.acc = vec2(0, 0);
 
-    this.listeners = []; this.lastPos = vec2(0, 0);
+    this.listeners = [];
 
     this.el = document.createElementNS(nssvg, 'rect');
     this.el.setAttribute('x', this.pos.x - this.size.x / 2);
@@ -293,9 +291,6 @@ class Box {
   update(dt) {
     this.x += dt * this.vel.x;
     this.y += -dt * this.vel.y;
-    this.realVel = Vector2.scale(1 / dt, vec2(this.pos.x - this.lastPos.x, this.pos.y - this.lastPos.y));
-    if (Vector2.subtract(this.pos, this.lastPos).length() > .5) console.log('jump');
-    this.lastPos = vec2(this.pos.x, this.pos.y);
   }
 
   little_update() {
@@ -374,13 +369,11 @@ class Spring {
 
   get angle() {
     let v = Vector2.subtract(this.right.left, this.left.right);
-    // v.reverse_y();
     return Math.atan2(v.y, v.x);
   }
 
   force(obj) {
     if (obj !== this.left && obj !== this.right) {
-      console.log('this is not right (nor left haha)');
       return vec2(0, 0);
     }
     let f_ = vec2(this.k * (this.distance - this.len), 0);
@@ -499,12 +492,8 @@ class Simulation {
     let space_per_spring = (this.width - .4 - this.n_masses * this.mm) / (this.n_masses + 1);
     let original_length = space_per_spring / 1000;
 
-    // this.k *= 50 / 49;
-
     this.boxes = [];
     for (let i = 0; i < this.n_masses; ++i) {
-      // this.boxes[i] = new Box(vec2(.2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y),
-      //   vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff');
       this.boxes[i] = new Box(vec2(this.x1 + .2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y1 + this.height / 2),
         vec2(this.mm, this.mm), 20, vec2(0, 0), '#007bff', '#004955', .05);
 
@@ -676,7 +665,6 @@ class Slider {
     svg.appendChild(this.guide);
 
     this.sl = new Box(pos1, Vector2.scale(this.size, vec2(.2, .2)), 1, vec2(0, 0), 'black');
-    // this.sl.el.classList.add('draggable');
     this.sl.el.classList.add('slider');
 
     this.sl.constraints.push(pinnedConstraint);
@@ -736,22 +724,6 @@ class Slider {
     svg.appendChild(this.label);
 
     this.value = this.initial_value;
-    // this.label.classList.add('draggable');
-
-
-    // this.el = document.createElementNS(nssvg, 'rect');
-    // this.el.setAttribute('x', this.pos.x - this.size.x / 2);
-    // this.el.setAttribute('y', height - this.pos.y - this.size.y / 2);
-    // this.el.setAttribute('z', '2');
-    // this.el.setAttribute('width', this.size.x);
-    // this.el.setAttribute('height', this.size.y);
-    // this.el.setAttribute('fill', this.color)
-
-    // this.el.classList.add('draggable');
-
-    // elements.set(this.el, this);
-
-    // svg.appendChild(this.el);
   }
 
   new_val() {
@@ -780,7 +752,6 @@ class Slider {
   }
 
   set value(val) {
-    // let displacement = (val - this.val) / (this.val2 - this.val1) * this.len;
     let new_pos = (val - this.val1) / (this.val2 - this.val1) * this.len + (this.horizontal ? this.pos1.x : this.pos1.y);
     if (this.horizontal) {
       this.sl.x = new_pos;
@@ -809,7 +780,7 @@ paused.setAttribute('font-size', '1');
 paused.setAttribute('text-anchor', 'middle');
 paused.setAttribute('fill', '#888');
 paused.textContent = 'PAUSED';
-// paused.style.setProperty('opacity', '0');
+
 svg.appendChild(paused);
 
 // let s2 = new Slider(vec2(7, 1), 2, 25, 32, true, 'bom dia2', undefined, undefined, false);
@@ -860,8 +831,6 @@ function sine_between(a, b, n_half_T, color, width, amplitude) {
           d += `S ${next.x - dist + .6358 * dist} ${y - this.amplitude.value} ${next.x} ${y}`;
         }
       }
-      // let d = `M ${a.x} ${y} c ${.3642 * (mid.x - a.x)} ${-amplitude} ${(1-.7058) * (mid.x - a.x)} ${- amplitude} ${mid.x} ${y}`;
-      // d += `S ${a.x + } ${1} ${b.x} ${y}`
       el.setAttribute('d', d);
     }
   };
@@ -951,12 +920,10 @@ class RadioGroup {
     radio_mark.setAttribute('cx', pos.x);
     radio_mark.setAttribute('cy', height - pos.y);
     radio_mark.setAttribute('r', size * .035);
-    // radio_mark.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    
     radio_mark.setAttribute('fill-opacity', "1");
     radio_mark.setAttribute('fill', "#555");
     radio_mark.setAttribute('visibility', "hidden");
-    // radio_mark.setAttribute('stroke-width', ".03");
-    // radio_mark.setAttribute('stroke', "#888");
 
     let label_el = document.createElementNS(nssvg, 'text');
     label_el.setAttribute('x', pos.x + size * .14);
@@ -999,7 +966,7 @@ class CheckBox {
     this.check_el.setAttribute('y', height - pos.y + .12 * size / 2);
     this.check_el.setAttribute('width', size * .12);
     this.check_el.setAttribute('height', size * .12);
-    // this.check_el.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    
     this.check_el.setAttribute('fill-opacity', "0");
     this.check_el.setAttribute('fill', "#888");
     this.check_el.setAttribute('stroke-width', size * .03);
@@ -1013,12 +980,10 @@ class CheckBox {
     this.mark.setAttribute('y', height - pos.y + .19 * size / 2);
     this.mark.setAttribute('width', size * .05);
     this.mark.setAttribute('height', size * .05);
-    // this.mark.setAttribute('y2', height - (this.pos1.y + (this.horizontal ? 0 : this.len)));
+    
     this.mark.setAttribute('fill-opacity', "1");
     this.mark.setAttribute('fill', "#555");
     this.mark.setAttribute('visibility', this.checked ? 'visible' : "hidden");
-    // this.mark.setAttribute('stroke-width', ".03");
-    // this.mark.setAttribute('stroke', "#888");
 
     this.label = document.createElementNS(nssvg, 'text');
     this.label.setAttribute('x', pos.x + size * .14);
@@ -1065,7 +1030,7 @@ class Button {
     this.button_el.setAttribute('y', height - (this.pos.y - this.size.y / 2));
     this.button_el.setAttribute('width', this.size.x);
     this.button_el.setAttribute('height', this.size.y);
-    // this.button_el.setAttribute('y2', height - (this.this.pos1.y + (this.horizontal ? 0 : this.len)));
+    
     this.button_el.setAttribute('fill-opacity', ".25");
     this.button_el.setAttribute('fill', "#888");
     this.button_el.setAttribute('stroke-width', .05);
@@ -1175,18 +1140,15 @@ class System {
   create(n_masses, vertical, restart = true) {
     if (this.first) {
       this.first = false;
-      // svg = realsvg;
       this.n_masses_slider = new Slider(vec2(7, 6.5), 1.5, 1, 10, true, 'Number of Masses', true, .7, true, n_masses);
       this.n_masses_slider.addListener(
         function () {
           if (this.n_masses_slider.value !== this.n_masses) {
             let val = this.n_masses_slider.value;
-            // realsvg.removeChild(svg);
             this.create(val, this.vertical);
           }
         }.bind(this)
         );
-        // svg = this.mysvg;
       this.hor_vert_selector = new RadioGroup();
       this.hor_vert_selector.addRadio(vec2(7, 7.5), 1.2, true, 'vertical');
       this.hor_vert_selector.addRadio(vec2(7, 8.0), 1.2, false, 'horizontal');
@@ -1246,10 +1208,6 @@ class System {
       for (let i = 0; i < this.n_masses; ++i) {
         this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
       }
-  
-      // console.log(this.normal_frequencies);
-      console.log(this.factor);
-      console.log(this.eigenvectors);
   
       running = false;
   
@@ -1332,7 +1290,6 @@ class System {
         }
       }, { value: 0.035 });
       this.updates.push(this.waves[i].amplitude.update.bind(this.waves[i].amplitude));
-      // this.waves = new WaveMarker(vec2(10 / 11 * (i + 1), 1), .8, i + 1, 'blue', '#222', 0.05);
     }
 
     this.sliders = [];
@@ -1360,36 +1317,17 @@ class System {
         }
       }.bind(this));
     }
-
-    // this.updates.push( function () {
-    //   for (let i = 0; i < this.n_masses; ++i) {
-    //     this.sliders[i].value = this.normal_amplitudes[i];
-    //   }
-    // }.bind(this));
-
   }
 
   update(dt) {
 
-    if (running === false) {
-      // for (let m of this.sim.masses) {
-      //   m.initial_position = m.pos.copy();
-      //   this.changed_initial_positions(false);
-      // }
-    } else {
+    if (running) {
       if (this.dragging) {
-        // if (this.not_dragging) {
-        //   // this.update_velocities();
-        //   this.not_dragging = false;
-        //   this.sim.only_update(dt);
-        // } else {
         this.sim.update(dt);
         this.changed_initial_positions(true, true);
-        // }
         this.time = 0;
       } else {
         this.sim.only_calculate(dt);
-        // this.not_dragging = true;
         this.time += dt;
 
         this.move_masses_to_the_correct_place();
@@ -1398,23 +1336,10 @@ class System {
     for (let u of this.updates) {
       u();
     }
-    // if (dt === 0) {
-    //   for (let i = 0; i < this.n_masses; ++i) {
-    //     if (this.sim.masses[i] !== elements.get(selectedElement)) {
-    //       this.sim.masses[i].pos.y = this.masses_zero_positions[i];
-    //       for (let j = 0; j < this.n_masses; ++j) {
-    //         this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
-    //       }
-    //       this.sim.masses[i].little_update();
-    //     }
-    //   }
-    // }
-
   }
 
   update_velocities() {
     for (let i = 0; i < this.n_masses; ++i) {
-      // console.log(sys.sim.masses[i].vel);
       sys.sim.masses[i].vel = vec2(0, 0);
       for (let j = 0; j < this.n_masses; ++j) {
         if (this.vertical) {
@@ -1423,7 +1348,6 @@ class System {
           sys.sim.masses[i].vel.x += - this.normal_frequencies[j] * this.eigenvectors[i][j] * this.normal_amplitudes[j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
         }
       }
-      // console.log(sys.sim.masses[i].vel);
     }
   }
 
@@ -1447,18 +1371,12 @@ class System {
   }
 
   changed_initial_positions(copy, copyvel) {
-    // let positions = [];
     if (copy) {
       for (let i = 0; i < this.n_masses; ++i) {
         this.sim.masses[i].initial_position = this.sim.masses[i].pos.copy();
 
         if (copyvel) {
           this.sim.masses[i].initial_velocity = this.sim.masses[i].vel.copy();
-        } else {
-          // this.sim.masses[i].initial_velocity.y = 0;
-          // for (let j = 0; j < this.n_masses; ++j) {
-          //   this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
-          // }
         }
       }
     }
@@ -1473,7 +1391,7 @@ class System {
         }
       }
       c /= this.normal_frequencies[i];
-      // positions[i] = this.sim.masses[i].initial_position;
+      
       for (let j = 0; j < this.n_masses; ++j) {
         if (this.vertical) {
           b += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
@@ -1481,19 +1399,13 @@ class System {
           b += (this.sim.masses[j].initial_position.x - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
         }
       }
-      // console.log(b);
-      // console.log(c);
+      
       if (Math.abs(b) < 1e-14 && Math.abs(c) < 1e-14) {
         this.initial_phases[i] = 0;
-        // if (this.dragging && i === 1) console.log(`oops mass ${'a'}`);
       } else {
-        // this.initial_phases[i] = Math.atan(c / b);
         this.initial_phases[i] = Math.atan2(c, b);
       }
-      // if (this.dragging && i === 1) {
-      //   console.log(b / Math.cos(this.initial_phases[i]));
-      //   console.log(c / Math.sin(this.initial_phases[i]));
-      // }
+      
       this.normal_amplitudes[i] = b / Math.cos(this.initial_phases[i]);
       if (this.normal_amplitudes[i] < 0) {
         this.initial_phases[i] += Math.PI;
@@ -1502,8 +1414,6 @@ class System {
       if (this.initial_phases[i] > Math.PI) {
         this.initial_phases[i] -= 2 * Math.PI;
       }
-      // if (this.dragging && this.normal_amplitudes[1] < .1) {console.log(b); console.log(c); console.log(this.sim.masses[0].initial_velocity); console.log(this.sim.masses[2].initial_velocity);}
-      // if (this.dragging && i === 1 && b < .001) {console.log(b); console.log(c); console.log(this.sim.masses[0].initial_velocity); console.log(this.sim.masses[2].initial_velocity);}
     }
     for (let i = 0; i < this.n_masses; ++i) {
       if (this.sliders && this.sliders[i]) {
@@ -1515,8 +1425,6 @@ class System {
         this.phase_sliders[i].value = this.initial_phases[i];
       }
     }
-    // this.time = 0;
-    // this.update(0);
   }
 
   has_mass(box) {
@@ -1569,7 +1477,7 @@ class System {
   }
 }
 
-let sys = new System(3, false);
+let sys = new System(3);
 
 function loop() {
   let timenow = performance.now();
@@ -1577,14 +1485,6 @@ function loop() {
   lastTime = timenow;
   if (running) {
     paused.style.setProperty('opacity', '0');
-    timeSinceLastUpdate += elapsedTime * simulation_speed.value;
-    // let t3 = performance.now();
-    while (timeSinceLastUpdate >= timePerFrame * simulation_speed.value) {
-      timeSinceLastUpdate -= timePerFrame * simulation_speed.value;
-      for (let s of simulations) {
-        s.update(timePerFrame * simulation_speed.value / 1000);
-      }
-    }
   } else {
     paused.style.setProperty('opacity', '1');
   }

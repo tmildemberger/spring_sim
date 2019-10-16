@@ -1206,7 +1206,7 @@ class System {
     zero_caption.setAttribute('fill', "#888");
     zero_caption.textContent = 'Zerar Posições';
     this.zero_positions = new Button(vec2(9, 6), vec2(.8, .4), zero_caption);
-    this.zero_positions.addListener(function () { this.reset_to_zero_positions(); this.changed_initial_positions(true); }.bind(this));
+    this.zero_positions.addListener(function () { this.reset_to_zero_positions(); this.changed_initial_positions(true, true); }.bind(this));
 
     // this.frame_advance_button = new Button();
 
@@ -1350,10 +1350,10 @@ class System {
         if (copyvel) {
           this.sim.masses[i].initial_velocity = this.sim.masses[i].vel.copy();
         } else {
-          this.sim.masses[i].initial_velocity.y = 0;
-          for (let j = 0; j < this.n_masses; ++j) {
-            this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
-          }
+          // this.sim.masses[i].initial_velocity.y = 0;
+          // for (let j = 0; j < this.n_masses; ++j) {
+          //   this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          // }
         }
       }
     }
@@ -1370,11 +1370,17 @@ class System {
       }
       // console.log(b);
       // console.log(c);
-      if (b < 1e-10 && c < 1e-10) {
+      if (Math.abs(b) < 1e-14 && Math.abs(c) < 1e-14) {
         this.initial_phases[i] = 0;
+        // if (this.dragging && i === 1) console.log(`oops mass ${'a'}`);
       } else {
-        this.initial_phases[i] = Math.atan(c / b);
+        // this.initial_phases[i] = Math.atan(c / b);
+        this.initial_phases[i] = Math.atan2(c, b);
       }
+      // if (this.dragging && i === 1) {
+      //   console.log(b / Math.cos(this.initial_phases[i]));
+      //   console.log(c / Math.sin(this.initial_phases[i]));
+      // }
       this.normal_amplitudes[i] = b / Math.cos(this.initial_phases[i]);
       if (this.normal_amplitudes[i] < 0) {
         this.initial_phases[i] += Math.PI;
@@ -1383,6 +1389,8 @@ class System {
       if (this.initial_phases[i] > Math.PI) {
         this.initial_phases[i] -= 2 * Math.PI;
       }
+      // if (this.dragging && this.normal_amplitudes[1] < .1) {console.log(b); console.log(c); console.log(this.sim.masses[0].initial_velocity); console.log(this.sim.masses[2].initial_velocity);}
+      // if (this.dragging && i === 1 && b < .001) {console.log(b); console.log(c); console.log(this.sim.masses[0].initial_velocity); console.log(this.sim.masses[2].initial_velocity);}
     }
     for (let i = 0; i < this.n_masses; ++i) {
       if (this.sliders && this.sliders[i]) {

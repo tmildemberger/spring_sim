@@ -109,6 +109,7 @@ function startDrag(event) {
 
     if (sys.has_mass(elements.get(selectedElement))) {
       sys.dragging = true;
+      sys.update_velocities();
       sys.changed_initial_positions(true);
     }
   }
@@ -513,6 +514,12 @@ class Simulation {
   only_calculate(dt) {
     for (const o of this.objs) {
       o.calculate(dt);
+    }
+  }
+
+  only_update(dt) {
+    for (const o of this.objs) {
+      o.update(dt);
     }
   }
 
@@ -1271,24 +1278,18 @@ class System {
       // }
     } else {
       if (this.dragging) {
-        if (this.not_dragging) {
-          // this.move_masses_to_the_correct_place(dt);
-          // if (this.not_dragging) {
-          for (let m of this.sim.masses) {
-            m.vel = vec2(0, 0);
-            for (let i = 0; i < this.n_masses; ++i) {
-              m.vel.y += - this.normal_frequencies[i] * this.normal_amplitudes[i] * Math.sin(this.normal_frequencies[i] * this.time - this.initial_phases[i]);
-            }
-            // m.vel.y /= this.n_masses;
-          }
-          this.not_dragging = false;
-        }
+        // if (this.not_dragging) {
+        //   // this.update_velocities();
+        //   this.not_dragging = false;
+        //   this.sim.only_update(dt);
+        // } else {
         this.sim.update(dt);
         this.changed_initial_positions(true);
+        // }
         this.time = 0;
       } else {
         this.sim.only_calculate(dt);
-        this.not_dragging = true;
+        // this.not_dragging = true;
         this.time += dt;
 
         this.move_masses_to_the_correct_place();
@@ -1309,6 +1310,17 @@ class System {
     //   }
     // }
 
+  }
+
+  update_velocities() {
+    for (let i = 0; i < this.n_masses; ++i) {
+      console.log(sys.sim.masses[i].vel);
+      sys.sim.masses[i].vel = vec2(0, 0);
+      for (let j = 0; j < this.n_masses; ++j) {
+        sys.sim.masses[i].vel.y += - this.normal_frequencies[j] * this.eigenvectors[i][j] * this.normal_amplitudes[j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+      }
+      console.log(sys.sim.masses[i].vel);
+    }
   }
 
   move_masses_to_the_correct_place() {

@@ -110,7 +110,7 @@ function startDrag(event) {
     if (sys.has_mass(elements.get(selectedElement))) {
       sys.dragging = true;
       sys.update_velocities();
-      sys.changed_initial_positions(true);
+      sys.changed_initial_positions(true, true);
     }
   }
 }
@@ -125,14 +125,14 @@ function drag(event) {
     obj.y = coord.y - offset.y;
 
     if (sys.has_mass(elements.get(selectedElement))) {
-      sys.changed_initial_positions(true);
+      sys.changed_initial_positions(true, true);
     }
   }
 }
 
 function endDrag(event) {
   if (sys.has_mass(elements.get(selectedElement))) {
-    sys.changed_initial_positions(true);
+    sys.changed_initial_positions(true, true);
     sys.dragging = false;
   }
   selectedElement = null;
@@ -1284,7 +1284,7 @@ class System {
         //   this.sim.only_update(dt);
         // } else {
         this.sim.update(dt);
-        this.changed_initial_positions(true);
+        this.changed_initial_positions(true, true);
         // }
         this.time = 0;
       } else {
@@ -1314,12 +1314,12 @@ class System {
 
   update_velocities() {
     for (let i = 0; i < this.n_masses; ++i) {
-      console.log(sys.sim.masses[i].vel);
+      // console.log(sys.sim.masses[i].vel);
       sys.sim.masses[i].vel = vec2(0, 0);
       for (let j = 0; j < this.n_masses; ++j) {
         sys.sim.masses[i].vel.y += - this.normal_frequencies[j] * this.eigenvectors[i][j] * this.normal_amplitudes[j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
       }
-      console.log(sys.sim.masses[i].vel);
+      // console.log(sys.sim.masses[i].vel);
     }
   }
 
@@ -1335,24 +1335,47 @@ class System {
     }
   }
 
-  changed_initial_positions(copy) {
+  changed_initial_positions(copy, copyvel) {
     // let positions = [];
     if (copy) {
-      for (let m of this.sim.masses) {
-        m.initial_position = m.pos.copy();
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.sim.masses[i].initial_position = this.sim.masses[i].pos.copy();
+
+        if (copyvel) {
+          this.sim.masses[i].initial_velocity = this.sim.masses[i].vel.copy();
+        } else {
+          this.sim.masses[i].initial_velocity.y = 0;
+          for (let j = 0; j < this.n_masses; ++j) {
+            this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          }
+        }
       }
     }
     for (let i = 0; i < this.n_masses; ++i) {
-      // positions[i] = this.sim.masses[i].initial_position;
-      this.normal_amplitudes[i] = 0;
+      let b = 0;
+      let c = 0;
       for (let j = 0; j < this.n_masses; ++j) {
-        this.normal_amplitudes[i] += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+        c += this.sim.masses[j].initial_velocity.y * this.eigenvectors[i][j] / this.factor;
       }
-      if (this.normal_amplitudes[i] < 0) {
-        this.initial_phases[i] = Math.PI;
-        this.normal_amplitudes[i] = -this.normal_amplitudes[i];
-      } else {
+      c /= this.normal_frequencies[i];
+      // positions[i] = this.sim.masses[i].initial_position;
+      for (let j = 0; j < this.n_masses; ++j) {
+        b += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+      }
+      // console.log(b);
+      // console.log(c);
+      if (b < 1e-10 && c < 1e-10) {
         this.initial_phases[i] = 0;
+      } else {
+        this.initial_phases[i] = Math.atan(c / b);
+      }
+      this.normal_amplitudes[i] = b / Math.cos(this.initial_phases[i]);
+      if (this.normal_amplitudes[i] < 0) {
+        this.initial_phases[i] += Math.PI;
+        this.normal_amplitudes[i] = -this.normal_amplitudes[i];
+      }
+      if (this.initial_phases[i] > Math.PI) {
+        this.initial_phases[i] -= 2 * Math.PI;
       }
     }
     for (let i = 0; i < this.n_masses; ++i) {
@@ -1381,8 +1404,10 @@ class System {
     for (let i = 0; i < this.n_masses; ++i) {
       if (this.sim.masses[i] !== elements.get(selectedElement)) {
         this.sim.masses[i].initial_position.y = this.masses_zero_positions[i];
+        this.sim.masses[i].initial_velocity.y = 0;
         for (let j = 0; j < this.n_masses; ++j) {
           this.sim.masses[i].initial_position.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
         }
       }
     }
@@ -1398,6 +1423,7 @@ class System {
   reset_to_zero_positions() {
     for (let i = 0; i < this.n_masses; ++i) {
       this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+      this.sim.masses[i].vel.y = 0;
     }
   }
 }

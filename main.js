@@ -539,6 +539,15 @@ class Simulation {
       b.update(0);
     }
   }
+
+  get_zero_positions() {
+    let zeros = [];
+    let space_per_spring = (this.width - .4 - this.n_masses * this.mm) / (this.n_masses + 1);
+    for (let i = 0; i < this.n_masses; ++i) {
+      zeros[i] = vec2(this.x1 + .2 + (i + 1) * space_per_spring + this.mm * (i + 1 / 2), this.y1 + this.height / 2);
+    }
+    return zeros;
+  }
 }
 
 let timePerFrame = 1 / 60 * 1000;
@@ -840,6 +849,7 @@ class RadioGroup {
   constructor() {
     this.radios = [];
     this.selected_;
+    this.listeners = [];
   }
 
   set selected(sel) {
@@ -850,12 +860,26 @@ class RadioGroup {
       this.radios[sel].select();
     }
     this.selected_ = sel;
+    for (let f of this.listeners) {
+      f();
+    }
   }
 
   get value() {
     if (this.radios[this.selected_]) {
       return this.radios[this.selected_].value;
     }
+  }
+
+  set value(val) {
+    let ix = this.radios.findIndex(x => x.value === val);
+    if (ix) {
+      this.selected = ix;
+    }
+  }
+
+  addListener(func) {
+    this.listeners.push(func);
   }
 
   addRadio(pos, size = 1, value, label) {
@@ -1096,12 +1120,12 @@ class WaveMarker {
 // let mark = new WaveMarker(vec2(4, 7.5), .5, 10, 'blue', '#111', .02);
 
 class System {
-  constructor(n_masses = 3) {
+  constructor(n_masses = 3, vertical = true) {
     this.first = true;
-    this.create(n_masses);
+    this.create(n_masses, vertical);
   }
 
-  create(n_masses) {
+  create(n_masses, vertical, restart = true) {
     if (this.first) {
       this.first = false;
       // svg = realsvg;
@@ -1111,11 +1135,22 @@ class System {
           if (this.n_masses_slider.value !== this.n_masses) {
             let val = this.n_masses_slider.value;
             // realsvg.removeChild(svg);
-            this.create(val);
+            this.create(val, this.vertical);
           }
         }.bind(this)
+        );
+        // svg = this.mysvg;
+      this.hor_vert_selector = new RadioGroup();
+      this.hor_vert_selector.addRadio(vec2(7, 7.5), 1.2, true, 'vertical');
+      this.hor_vert_selector.addRadio(vec2(7, 8.0), 1.2, false, 'horizontal');
+      this.hor_vert_selector.value = vertical;
+      this.hor_vert_selector.addListener(
+        function () {
+          this.vertical = this.hor_vert_selector.value;
+          this.create(this.n_masses, this.vertical, false);
+        }.bind(this)
       );
-      // svg = this.mysvg;
+
 
     } else {
       realsvg.removeChild(svg);
@@ -1126,54 +1161,65 @@ class System {
     this.n_masses = n_masses;
     this.k = 700;
     this.m = 20;
+    this.vertical = vertical;
 
-    this.sim = new Simulation(this.n_masses, 0, 10, 4.5, 6, {}, this.k);
+    this.sim = new Simulation(this.n_masses, 0, 10, 4.5, 6, { type: this.vertical ? 'vertical' : 'horizontal' }, this.k);
 
-    this.normal_frequencies = [];
-    this.eigenvectors = [];
-
-    for (let i = 1; i <= this.n_masses; ++i) {
-      this.normal_frequencies[i - 1] = 2 * Math.sqrt(this.k / this.m) * Math.sin(Math.PI / 2 * i / (this.n_masses + 1));
-      let ev_i = [];
-      for (let j = 1; j <= this.n_masses; ++j) {
-        ev_i[j - 1] = Math.sin(i * Math.PI * j / (this.n_masses + 1));
-      }
-      this.eigenvectors[i - 1] = ev_i;
-    }
-    this.factor = 0;
+    this.masses_zero_positions = this.sim.get_zero_positions();
     for (let i = 0; i < this.n_masses; ++i) {
-      this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
-    }
-    for (let i = 0; i < this.n_masses; ++i) {
-      for (let j = 0; j < this.n_masses; ++j) {
-        this.eigenvectors[i][j] /= Math.sqrt(this.factor);
+      if (this.vertical) {
+        this.masses_zero_positions[i] = this.masses_zero_positions[i].y;
+      } else {
+        this.masses_zero_positions[i] = this.masses_zero_positions[i].x;
       }
     }
-    this.factor = 0;
-    for (let i = 0; i < this.n_masses; ++i) {
-      this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
+
+    if (restart) {
+      this.normal_frequencies = [];
+      this.eigenvectors = [];
+  
+      for (let i = 1; i <= this.n_masses; ++i) {
+        this.normal_frequencies[i - 1] = 2 * Math.sqrt(this.k / this.m) * Math.sin(Math.PI / 2 * i / (this.n_masses + 1));
+        let ev_i = [];
+        for (let j = 1; j <= this.n_masses; ++j) {
+          ev_i[j - 1] = Math.sin(i * Math.PI * j / (this.n_masses + 1));
+        }
+        this.eigenvectors[i - 1] = ev_i;
+      }
+      this.factor = 0;
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
+      }
+      for (let i = 0; i < this.n_masses; ++i) {
+        for (let j = 0; j < this.n_masses; ++j) {
+          this.eigenvectors[i][j] /= Math.sqrt(this.factor);
+        }
+      }
+      this.factor = 0;
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.factor += this.eigenvectors[0][i] * this.eigenvectors[0][i];
+      }
+  
+      // console.log(this.normal_frequencies);
+      console.log(this.factor);
+      console.log(this.eigenvectors);
+  
+      running = false;
+  
+      this.normal_amplitudes = [];
+      this.initial_phases = [];
+      this.time = 0;
+  
+      this.dragging = false;
+      this.not_dragging = true;
+
+      for (let i = 0; i < this.n_masses; ++i) {
+        this.initial_phases[i] = 0;
+      }
+
+      this.changed_initial_positions();
+
     }
-
-    // console.log(this.normal_frequencies);
-    console.log(this.factor);
-    console.log(this.eigenvectors);
-
-    running = false;
-
-    this.normal_amplitudes = [];
-    this.initial_phases = [];
-    this.time = 0;
-
-    this.dragging = false;
-    this.not_dragging = true;
-
-    this.masses_zero_positions = [];
-    for (let i = 0; i < this.n_masses; ++i) {
-      this.masses_zero_positions[i] = this.sim.masses[i].initial_position.y;
-
-      this.initial_phases[i] = 0;
-    }
-    this.changed_initial_positions();
 
     let stop_caption = document.createElementNS(nssvg, 'text');
     stop_caption.setAttribute('x', 9);
@@ -1245,7 +1291,7 @@ class System {
     this.sliders = [];
 
     for (let i = 0; i < this.n_masses; ++i) {
-      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, 0, true);
+      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, this.restart ? 0 : this.normal_amplitudes[i], true);
       this.sliders[i].addListener(function () {
         if (!this.dragging) {
           this.normal_amplitudes[i] = this.sliders[i].value;
@@ -1258,7 +1304,7 @@ class System {
     this.phase_sliders = [];
 
     for (let i = 0; i < this.n_masses; ++i) {
-      this.phase_sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 1), .8, -Math.PI, Math.PI, false, '', false, .7, false, 0);
+      this.phase_sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 1), .8, -Math.PI, Math.PI, false, '', false, .7, false, this.restart ? 0 : this.initial_phases[i]);
       this.phase_sliders[i].addListener(function () {
         if (!this.dragging) {
           this.initial_phases[i] = this.phase_sliders[i].value;
@@ -1267,6 +1313,7 @@ class System {
         }
       }.bind(this));
     }
+
     // this.updates.push( function () {
     //   for (let i = 0; i < this.n_masses; ++i) {
     //     this.sliders[i].value = this.normal_amplitudes[i];
@@ -1323,7 +1370,11 @@ class System {
       // console.log(sys.sim.masses[i].vel);
       sys.sim.masses[i].vel = vec2(0, 0);
       for (let j = 0; j < this.n_masses; ++j) {
-        sys.sim.masses[i].vel.y += - this.normal_frequencies[j] * this.eigenvectors[i][j] * this.normal_amplitudes[j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        if (this.vertical) {
+          sys.sim.masses[i].vel.y += - this.normal_frequencies[j] * this.eigenvectors[i][j] * this.normal_amplitudes[j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        } else {
+          sys.sim.masses[i].vel.x += - this.normal_frequencies[j] * this.eigenvectors[i][j] * this.normal_amplitudes[j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        }
       }
       // console.log(sys.sim.masses[i].vel);
     }
@@ -1332,9 +1383,16 @@ class System {
   move_masses_to_the_correct_place() {
     for (let i = 0; i < this.n_masses; ++i) {
       if (this.sim.masses[i] !== elements.get(selectedElement)) {
-        this.sim.masses[i].pos.y = this.masses_zero_positions[i];
-        for (let j = 0; j < this.n_masses; ++j) {
-          this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        if (this.vertical) {
+          this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+          for (let j = 0; j < this.n_masses; ++j) {
+            this.sim.masses[i].pos.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          }
+        } else {
+          this.sim.masses[i].pos.x = this.masses_zero_positions[i];
+          for (let j = 0; j < this.n_masses; ++j) {
+            this.sim.masses[i].pos.x += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          }
         }
         this.sim.masses[i].little_update();
       }
@@ -1361,12 +1419,20 @@ class System {
       let b = 0;
       let c = 0;
       for (let j = 0; j < this.n_masses; ++j) {
-        c += this.sim.masses[j].initial_velocity.y * this.eigenvectors[i][j] / this.factor;
+        if (this.vertical) {
+          c += this.sim.masses[j].initial_velocity.y * this.eigenvectors[i][j] / this.factor;
+        } else {
+          c += this.sim.masses[j].initial_velocity.x * this.eigenvectors[i][j] / this.factor;
+        }
       }
       c /= this.normal_frequencies[i];
       // positions[i] = this.sim.masses[i].initial_position;
       for (let j = 0; j < this.n_masses; ++j) {
-        b += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+        if (this.vertical) {
+          b += (this.sim.masses[j].initial_position.y - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+        } else {
+          b += (this.sim.masses[j].initial_position.x - this.masses_zero_positions[j]) * this.eigenvectors[i][j] / this.factor;
+        }
       }
       // console.log(b);
       // console.log(c);
@@ -1417,11 +1483,20 @@ class System {
   recalculate_initial_positions() {
     for (let i = 0; i < this.n_masses; ++i) {
       if (this.sim.masses[i] !== elements.get(selectedElement)) {
-        this.sim.masses[i].initial_position.y = this.masses_zero_positions[i];
-        this.sim.masses[i].initial_velocity.y = 0;
-        for (let j = 0; j < this.n_masses; ++j) {
-          this.sim.masses[i].initial_position.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
-          this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+        if (this.vertical) {
+          this.sim.masses[i].initial_position.y = this.masses_zero_positions[i];
+          this.sim.masses[i].initial_velocity.y = 0;
+          for (let j = 0; j < this.n_masses; ++j) {
+            this.sim.masses[i].initial_position.y += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+            this.sim.masses[i].initial_velocity.y += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          }
+        } else {
+          this.sim.masses[i].initial_position.x = this.masses_zero_positions[i];
+          this.sim.masses[i].initial_velocity.x = 0;
+          for (let j = 0; j < this.n_masses; ++j) {
+            this.sim.masses[i].initial_position.x += this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.cos(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+            this.sim.masses[i].initial_velocity.x += - this.normal_frequencies[j] * this.normal_amplitudes[j] * this.eigenvectors[i][j] * Math.sin(this.normal_frequencies[j] * this.time - this.initial_phases[j]);
+          }
         }
       }
     }
@@ -1436,13 +1511,18 @@ class System {
 
   reset_to_zero_positions() {
     for (let i = 0; i < this.n_masses; ++i) {
-      this.sim.masses[i].pos.y = this.masses_zero_positions[i];
-      this.sim.masses[i].vel.y = 0;
+      if (this.vertical) {
+        this.sim.masses[i].pos.y = this.masses_zero_positions[i];
+        this.sim.masses[i].vel.y = 0;
+      } else {
+        this.sim.masses[i].pos.x = this.masses_zero_positions[i];
+        this.sim.masses[i].vel.x = 0;
+      }
     }
   }
 }
 
-let sys = new System();
+let sys = new System(3, false);
 
 function loop() {
   let timenow = performance.now();

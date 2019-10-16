@@ -732,7 +732,13 @@ class Slider {
       this.sl.y = height - new_pos;
     }
     if (this.accept_outside) {
-      this.val = val;
+      if (this.round) {
+        this.val = Math.round(this.val);
+        this.txt.textContent = this.val.toString();
+      } else {
+        this.val = val;
+        this.txt.textContent = this.val.toFixed(3);
+      }
       for (let f of this.listeners) {
         f();
       }

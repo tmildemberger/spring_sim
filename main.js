@@ -7,18 +7,30 @@ let svg = document.getElementById('graphics');
 let width;
 let height;
 
-svg.setAttribute('viewBox', `0 0 10 8`);
+realsvg.setAttribute('viewBox', `0 0 10 8`);
+realsvg.setAttribute('height', window.innerHeight);
 
 height = 6;
 width = 10;
-// function resize_things() {
-//   width = window.innerWidth;
-//   height = window.innerHeight;
+function resize_things() {
+  // width = window.innerWidth;
+  // height = window.innerHeight;
+  realsvg.setAttribute('height', window.innerHeight);
+  
+  let box = realsvg.getBoundingClientRect();
 
-// }
+  if (box.width >= window.innerWidth) {
+    realsvg.setAttribute('width', window.innerWidth);
+  } else {
+    realsvg.setAttribute('width', 'auto');
+  }
 
-// resize_things();
-// document.defaultView.addEventListener('resize', resize_things);
+  // parseFloat(svg.getAttribute('height'));
+
+}
+
+resize_things();
+document.defaultView.addEventListener('resize', resize_things);
 
 let nssvg = 'http://www.w3.org/2000/svg';
 
@@ -1196,8 +1208,8 @@ class System {
         }.bind(this)
       );
       this.hor_vert_selector = new RadioGroup();
-      this.hor_vert_selector.addRadio(vec2(7, 7.5), 1.2, true, 'vertical');
-      this.hor_vert_selector.addRadio(vec2(7, 8.0), 1.2, false, 'horizontal');
+      this.hor_vert_selector.addRadio(vec2(7.35, 1.8), 1.2, true, '');
+      this.hor_vert_selector.addRadio(vec2(7.35, 1.4), 1.2, false, '');
       this.hor_vert_selector.value = vertical;
       this.hor_vert_selector.addListener(
         function () {
@@ -1335,20 +1347,82 @@ class System {
     this.show_phases_check = new CheckBox(vec2(8.3, 2.65), 1.4, 'Mostrar fases', this.show_phases, 1);
     this.show_phases_check.addListener(function () { this.show_phases = this.show_phases_check.value; for (let s of this.phase_sliders) if (this.show_phases) s.setVisible(); else s.setHidden(); }.bind(this));
 
+    let x_init = 0.4;
+    let x_avl = 7.4 - x_init;
+
     this.markers = [];
-    for (let i = 0; i < this.n_masses; ++i) {
-      this.markers[i] = new WaveMarker(vec2(10 / (this.n_masses + 1) * (i + 1), 4), .8, i + 1, 'blue', '#222', 0.02);
-    }
 
     this.waves = [];
     this.updates = [];
 
-    for (let i = 0; i < this.n_masses; ++i) {
+    this.sliders = [];
 
-      this.waves[i] = new Waves(vec2(10 / (this.n_masses + 1) * (i + 1) - .4, .7), .8, i + 1, 'blue', '#222', vec2(.05, .08), {
+    this.phase_sliders = [];
+
+    for (let i = 0; i < this.n_masses; ++i) {
+      let pos_x = x_init + x_avl / (this.n_masses + 1) * (i + 1);
+      let top_y = 1.8;
+
+      this.markers[i] = new WaveMarker(vec2(pos_x, top_y), .5, i + 1, 'blue', '#222', 0.02);
+
+      let normal_n = document.createElementNS(nssvg, 'text');
+      normal_n.setAttribute('x', pos_x);
+      normal_n.setAttribute('y', height - (top_y - .4));
+      normal_n.setAttribute('font-size', .25);
+      normal_n.setAttribute('font-weight', 'bold');
+      normal_n.setAttribute('text-anchor', 'middle');
+      normal_n.setAttribute('alignment-baseline', 'middle');
+      normal_n.setAttribute('fill', "#111");
+      normal_n.textContent = i + 1;
+      svg.appendChild(normal_n);
+
+      this.sliders[i] = new Slider(vec2(pos_x, top_y - .4 - 1.2 - .2), 1.2, 0, 1, false, '', false, 1.1, false, this.restart ? 0 : this.normal_amplitudes[i], true, .4);
+      this.sliders[i].txt.setAttribute('x', parseFloat(this.sliders[i].txt.getAttribute('x')) + .10);
+      this.sliders[i].addListener(function () {
+        if (!this.dragging) {
+          this.normal_amplitudes[i] = this.sliders[i].value;
+          this.move_masses_to_the_correct_place();
+          this.recalculate_initial_positions();
+        }
+      }.bind(this));
+
+      let normal_freq = document.createElementNS(nssvg, 'text');
+      normal_freq.setAttribute('x', pos_x);
+      normal_freq.setAttribute('y', height - (top_y - .4 - 1.2 - .2 - .3));
+      normal_freq.setAttribute('font-size', .2);
+      normal_freq.setAttribute('text-anchor', 'middle');
+      normal_freq.setAttribute('alignment-baseline', 'middle');
+      normal_freq.setAttribute('fill', "#111");
+      normal_freq.textContent = `${(this.normal_frequencies[i] / Math.sqrt(this.k / this.m)).toFixed(2)}ω`;
+      svg.appendChild(normal_freq);
+
+      this.phase_sliders[i] = new Slider(vec2(pos_x, top_y - .4 - 1.2 - .2 - .5 - .8), .8, -Math.PI, Math.PI, false, '', false, 1.1, false, this.restart ? 0 : this.initial_phases[i], false, .4);
+      this.phase_sliders[i].txt.setAttribute('x', parseFloat(this.phase_sliders[i].txt.getAttribute('x')) + .10);
+      this.phase_sliders[i].addListener(function () {
+        if (!this.dragging) {
+          this.initial_phases[i] = this.phase_sliders[i].value;
+          this.move_masses_to_the_correct_place();
+          this.recalculate_initial_positions();
+        }
+      }.bind(this));
+
+      top_y = 1.9;
+      pos_x = 8.9;
+
+      let wave_n = document.createElementNS(nssvg, 'text');
+      wave_n.setAttribute('x', pos_x - .87);
+      wave_n.setAttribute('y', height - (top_y - .30 * i - .012));
+      wave_n.setAttribute('font-size', .18);
+      wave_n.setAttribute('text-anchor', 'end');
+      wave_n.setAttribute('alignment-baseline', 'middle');
+      wave_n.setAttribute('fill', "#111");
+      wave_n.textContent = i + 1;
+      svg.appendChild(wave_n);
+
+      this.waves[i] = new Waves(vec2(pos_x - .8, top_y - .30 * i), 1.6, i + 1, 'blue', '#222', vec2(.05, .08), {
         get value() { return this.val(); },
         val: function () {
-          return .5 * this.normal_amplitudes[i] * Math.cos(this.normal_frequencies[i] * this.time - this.initial_phases[i])
+          return .16 * this.normal_amplitudes[i] * Math.cos(this.normal_frequencies[i] * this.time - this.initial_phases[i])
         }.bind(this),
         listeners: [],
         addListener(func) {
@@ -1363,35 +1437,10 @@ class System {
       this.updates.push(this.waves[i].amplitude.update.bind(this.waves[i].amplitude));
     }
 
-    this.sliders = [];
-
-    for (let i = 0; i < this.n_masses; ++i) {
-      this.sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 2), 1.5, 0, 1, false, '', false, .7, false, this.restart ? 0 : this.normal_amplitudes[i], true);
-      this.sliders[i].addListener(function () {
-        if (!this.dragging) {
-          this.normal_amplitudes[i] = this.sliders[i].value;
-          this.move_masses_to_the_correct_place();
-          this.recalculate_initial_positions();
-        }
-      }.bind(this));
-    }
-
-    this.phase_sliders = [];
-
-    for (let i = 0; i < this.n_masses; ++i) {
-      this.phase_sliders[i] = new Slider(vec2(10 / (this.n_masses + 1) * (i + 1), 1), .8, -Math.PI, Math.PI, false, '', false, .7, false, this.restart ? 0 : this.initial_phases[i]);
-      this.phase_sliders[i].addListener(function () {
-        if (!this.dragging) {
-          this.initial_phases[i] = this.phase_sliders[i].value;
-          this.move_masses_to_the_correct_place();
-          this.recalculate_initial_positions();
-        }
-      }.bind(this));
-    }
-
     if (this.show_phases === false) {
       for (let s of this.phase_sliders) s.setHidden();
     }
+
   }
 
   update(dt) {
@@ -1552,7 +1601,7 @@ class System {
   }
 }
 
-let sys = new System(3);
+let sys = new System(10);
 
 function loop() {
   let timenow = performance.now();

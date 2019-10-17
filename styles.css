@@ -3,6 +3,7 @@ body {
     overflow: hidden;
     touch-action: none;
     font-family: 'Noto Sans', sans-serif;
+    background-color: #fafafa;
 }
 
 .static {

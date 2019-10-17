@@ -1218,6 +1218,16 @@ class System {
         }.bind(this)
       );
 
+      let vert = document.createElementNS(nssvg, 'path');
+      vert.setAttribute('d', 'M 7.55 4.2 m .035 -0.03 l .10 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.10 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05');
+      vert.setAttribute('fill', '#333');
+      svg.appendChild(vert);
+
+      let horz = document.createElementNS(nssvg, 'path');
+      horz.setAttribute('d', 'M 7.55 4.6 m .035 -0.03 l .10 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.10 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05');
+      horz.setAttribute('fill', '#333');
+      svg.appendChild(horz);
+
       this.show_phases = false;
     } else {
       realsvg.removeChild(svg);

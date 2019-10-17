@@ -1450,6 +1450,7 @@ class System {
     if (this.show_phases === false) {
       for (let s of this.phase_sliders) s.setHidden();
     }
+  this.move_masses_to_the_correct_place();
 
   }
 

@@ -1229,6 +1229,8 @@ class System {
       svg.appendChild(horz);
 
       this.show_phases = false;
+      this.show_controls = true;
+      this.show_waves = true;
     } else {
       realsvg.removeChild(svg);
     }
@@ -1355,7 +1357,7 @@ class System {
     this.show_springs_check.addListener(function () { show_springs = !show_springs; for (let s of this.sim.springs) s.update(); }.bind(this));
 
     this.show_phases_check = new CheckBox(vec2(8.3, 2.65), 1.4, 'Mostrar fases', this.show_phases, 1);
-    this.show_phases_check.addListener(function () { this.show_phases = this.show_phases_check.value; for (let s of this.phase_sliders) if (this.show_phases) s.setVisible(); else s.setHidden(); }.bind(this));
+    this.show_phases_check.addListener(function () { this.show_phases = this.show_phases_check.value; for (let s of this.phase_sliders) if (this.show_phases && this.show_controls) s.setVisible(); else s.setHidden(); }.bind(this));
 
     let x_init = 0.4;
     let x_avl = 7.4 - x_init;
@@ -1368,6 +1370,35 @@ class System {
     this.sliders = [];
 
     this.phase_sliders = [];
+
+    this.controls_check = new CheckBox(vec2(x_init, 2.4), 1.4, 'escrever algo', this.show_controls, 1);
+
+    this.no_controls = document.createElementNS(nssvg, 'text');
+    this.no_controls.setAttribute('x', x_init + 1);
+    this.no_controls.setAttribute('y', height - 2.4);
+    this.no_controls.setAttribute('font-size', .12);
+    this.no_controls.setAttribute('text-anchor', 'middle');
+    this.no_controls.setAttribute('alignment-baseline', 'middle');
+    this.no_controls.setAttribute('fill', "#888");
+    this.no_controls.textContent = 'texto espectro';
+    svg.appendChild(this.no_controls);
+
+    this.controls = document.createElementNS(nssvg, 'g');
+    svg.appendChild(this.controls);
+    this.svg = svg;
+    svg = this.controls;
+    
+    this.controls_check.addListener(function () {
+      this.show_controls = this.controls_check.value;
+      if (this.show_controls) {
+        this.controls.setAttribute('visibility', 'visible');
+        this.no_controls.setAttribute('visibility', 'hidden');
+      } else {
+        this.controls.setAttribute('visibility', 'hidden');
+        this.no_controls.setAttribute('visibility', 'visible');
+      }
+    }.bind(this));
+    this.controls_check.listeners[0]();
 
     for (let i = 0; i < this.n_masses; ++i) {
       let pos_x = x_init + x_avl / (this.n_masses + 1) * (i + 1);
@@ -1416,8 +1447,43 @@ class System {
         }
       }.bind(this));
 
-      top_y = 1.9;
-      pos_x = 8.9;
+    }
+
+    svg = this.svg;
+
+    this.waves_check = new CheckBox(vec2(8.9, 2.4), 1.4, 'escrever algo', this.show_waves, 1);
+
+    this.no_waves = document.createElementNS(nssvg, 'text');
+    this.no_waves.setAttribute('x', 8.9);
+    this.no_waves.setAttribute('y', height - 2.4);
+    this.no_waves.setAttribute('font-size', .12);
+    this.no_waves.setAttribute('text-anchor', 'middle');
+    this.no_waves.setAttribute('alignment-baseline', 'middle');
+    this.no_waves.setAttribute('fill', "#888");
+    this.no_waves.textContent = 'texto espectro';
+    svg.appendChild(this.no_waves);
+
+    this.waves_container = document.createElementNS(nssvg, 'g');
+    svg.appendChild(this.waves_container);
+    this.svg = svg;
+    svg = this.waves_container;
+    
+    this.waves_check.addListener(function () {
+      this.show_waves = this.waves_check.value;
+      if (this.show_waves) {
+        this.waves_container.setAttribute('visibility', 'visible');
+        this.no_waves.setAttribute('visibility', 'hidden');
+      } else {
+        this.waves_container.setAttribute('visibility', 'hidden');
+        this.no_waves.setAttribute('visibility', 'visible');
+      }
+    }.bind(this));
+
+    this.waves_check.listeners[0]();
+
+    for (let i = 0; i < this.n_masses; ++i) {
+      let top_y = 1.9;
+      let pos_x = 8.9;
 
       let wave_n = document.createElementNS(nssvg, 'text');
       wave_n.setAttribute('x', pos_x - .87);
@@ -1446,6 +1512,9 @@ class System {
       }, { value: 0.035 });
       this.updates.push(this.waves[i].amplitude.update.bind(this.waves[i].amplitude));
     }
+
+    svg = this.svg;
+    // this.controls.setAttribute('visibility', 'hidden');
 
     if (this.show_phases === false) {
       for (let s of this.phase_sliders) s.setHidden();

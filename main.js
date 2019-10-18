@@ -7,7 +7,7 @@ let svg = document.getElementById('graphics');
 let width;
 let height;
 
-realsvg.setAttribute('viewBox', `0 0 10 8`);
+realsvg.setAttribute('viewBox', `0 0 10 7.5`);
 realsvg.setAttribute('height', window.innerHeight);
 
 height = 6;
@@ -16,7 +16,7 @@ function resize_things() {
   // width = window.innerWidth;
   // height = window.innerHeight;
   realsvg.setAttribute('height', window.innerHeight);
-  
+
   let box = realsvg.getBoundingClientRect();
 
   if (box.width >= window.innerWidth) {
@@ -111,7 +111,13 @@ function getMousePosition(event) {
 }
 
 function startDrag(event) {
+  if (event.target.classList.contains('button') ||
+    event.target.classList.contains('radio') ||
+    event.target.classList.contains('check')) {
+    event.preventDefault();
+  }
   if (event.target.classList.contains('draggable')) {
+    event.preventDefault();
     selectedElement = event.target;
     offset = getMousePosition(event);
 
@@ -1219,7 +1225,7 @@ class System {
       );
 
       let vert = document.createElementNS(nssvg, 'path');
-      vert.setAttribute('d', 'M 7.55 4.2 m .035 -0.03 l .10 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.10 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05');
+      vert.setAttribute('d', 'M 7.55 4.2 m .035 -0.01 l 0 -.05 l -.07 0 l .095 -.1 l .095 .1 l -.07 0 l 0 .10 l .07 0 l -.095 .1 l -.095 -.1 l .07 0 l 0 -.05');
       vert.setAttribute('fill', '#333');
       svg.appendChild(vert);
 
@@ -1519,7 +1525,7 @@ class System {
     if (this.show_phases === false) {
       for (let s of this.phase_sliders) s.setHidden();
     }
-  this.move_masses_to_the_correct_place();
+    this.move_masses_to_the_correct_place();
 
   }
 
@@ -1700,7 +1706,8 @@ function loop() {
 
 function keyboard_pressed(event) {
   if (event.key === " ") {
-    running = !running;
+    // running = !running;
+    sys.stop_button.clicked();
   }
 }
 

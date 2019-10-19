@@ -1214,8 +1214,8 @@ class System {
         }.bind(this)
       );
       this.hor_vert_selector = new RadioGroup();
-      this.hor_vert_selector.addRadio(vec2(7.35, 1.8), 1.2, true, '');
-      this.hor_vert_selector.addRadio(vec2(7.35, 1.4), 1.2, false, '');
+      this.hor_vert_selector.addRadio(vec2(7.3, 1.05), 1.2, true, '');
+      this.hor_vert_selector.addRadio(vec2(7.3, 0.65), 1.2, false, '');
       this.hor_vert_selector.value = vertical;
       this.hor_vert_selector.addListener(
         function () {
@@ -1225,12 +1225,12 @@ class System {
       );
 
       let vert = document.createElementNS(nssvg, 'path');
-      vert.setAttribute('d', 'M 7.55 4.2 m .035 -0.01 l 0 -.05 l -.07 0 l .095 -.1 l .095 .1 l -.07 0 l 0 .10 l .07 0 l -.095 .1 l -.095 -.1 l .07 0 l 0 -.05');
+      vert.setAttribute('d', 'M 7.5 4.95 m .035 -0.01 l 0 -.05 l -.07 0 l .095 -.1 l .095 .1 l -.07 0 l 0 .10 l .07 0 l -.095 .1 l -.095 -.1 l .07 0 l 0 -.05');
       vert.setAttribute('fill', '#333');
       svg.appendChild(vert);
 
       let horz = document.createElementNS(nssvg, 'path');
-      horz.setAttribute('d', 'M 7.55 4.6 m .035 -0.03 l .10 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.10 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05');
+      horz.setAttribute('d', 'M 7.5 5.35 m .035 -0.03 l .10 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.10 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05');
       horz.setAttribute('fill', '#333');
       svg.appendChild(horz);
 
@@ -1365,8 +1365,8 @@ class System {
     this.show_phases_check = new CheckBox(vec2(8.3, 2.65), 1.4, 'Mostrar fases', this.show_phases, 1);
     this.show_phases_check.addListener(function () { this.show_phases = this.show_phases_check.value; for (let s of this.phase_sliders) if (this.show_phases && this.show_controls) s.setVisible(); else s.setHidden(); }.bind(this));
 
-    let x_init = 0.4;
-    let x_avl = 7.4 - x_init;
+    let x_init = 0.95;
+    let x_avl = 7.6 - x_init;
 
     this.markers = [];
 
@@ -1377,18 +1377,35 @@ class System {
 
     this.phase_sliders = [];
 
-    this.controls_check = new CheckBox(vec2(x_init, 2.4), 1.4, 'escrever algo', this.show_controls, 1);
+    this.bound = document.createElementNS(nssvg, 'rect');
+    this.bound.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - 1.5);
+    // this.bound.setAttribute('x', x_init - .9);
+    this.bound.setAttribute('y', height - 2.3);
+    // this.bound.setAttribute('width', 7.8);
+    this.bound.setAttribute('width', x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.372 - 1.5);
+    this.bound.setAttribute('height', 2.8);
+    this.bound.setAttribute('stroke', '#333');
+    this.bound.setAttribute('stroke-width', .07);
+    this.bound.setAttribute('fill', '#777');
+    this.bound.setAttribute('fill-opacity', '.1');
+    this.bound.setAttribute('pointer-events', 'none');
+    this.bound.setAttribute('rx', '.2');
+    svg.appendChild(this.bound);
+    // this.bound.setAttribute('ry', '.3');
+
+    // this.controls_check = new CheckBox(vec2(x_init + .1, 2.2), 1.4, '', this.show_controls, 1);
+    this.controls_check = new CheckBox(vec2(x_init + x_avl / (this.n_masses + 1) - 1.23, 2.2), 1.4, '', this.show_controls, 1);
 
     this.no_controls = document.createElementNS(nssvg, 'text');
-    this.no_controls.setAttribute('x', x_init + 1);
-    this.no_controls.setAttribute('y', height - 2.4);
-    this.no_controls.setAttribute('font-size', .12);
-    this.no_controls.setAttribute('text-anchor', 'middle');
+    this.no_controls.setAttribute('x', x_init - .3);
+    this.no_controls.setAttribute('y', height - 2.0);
+    this.no_controls.setAttribute('font-size', .2);
+    this.no_controls.setAttribute('text-anchor', 'start');
     this.no_controls.setAttribute('alignment-baseline', 'middle');
     this.no_controls.setAttribute('fill', "#888");
-    this.no_controls.textContent = 'texto espectro';
+    this.no_controls.textContent = 'Espectro no Modo Normal';
     svg.appendChild(this.no_controls);
-
+    
     this.controls = document.createElementNS(nssvg, 'g');
     svg.appendChild(this.controls);
     this.svg = svg;
@@ -1406,6 +1423,17 @@ class System {
     }.bind(this));
     this.controls_check.listeners[0]();
 
+    this.normal_mode_txt = document.createElementNS(nssvg, 'text');
+    // this.normal_mode_txt.setAttribute('x', x_init - .8);
+    this.normal_mode_txt.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - 1.4);
+    this.normal_mode_txt.setAttribute('y', height - 1.4);
+    this.normal_mode_txt.setAttribute('font-size', .19);
+    this.normal_mode_txt.setAttribute('text-anchor', 'start');
+    this.normal_mode_txt.setAttribute('alignment-baseline', 'middle');
+    this.normal_mode_txt.setAttribute('fill', "#555");
+    this.normal_mode_txt.textContent = 'Modo Normal';
+    svg.appendChild(this.normal_mode_txt);
+    
     for (let i = 0; i < this.n_masses; ++i) {
       let pos_x = x_init + x_avl / (this.n_masses + 1) * (i + 1);
       let top_y = 1.8;

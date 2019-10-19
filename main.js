@@ -22,7 +22,7 @@ function resize_things() {
   if (box.width >= window.innerWidth) {
     realsvg.setAttribute('width', window.innerWidth);
   } else {
-    realsvg.setAttribute('width', 'auto');
+    realsvg.setAttribute('width', '100%');
   }
 
   // parseFloat(svg.getAttribute('height'));
@@ -1795,9 +1795,9 @@ loop();
 
 // códigos úteis:
 
-let t = new Box(vec2(1, 1), vec2(0.15, 0.15), 1, vec2(0, 0), '#007bff', '#004995', .03)
-t.listeners.push(function () { paused.textContent = `x:${t.pos.x.toFixed(2)}, y:${t.pos.y.toFixed(2)}`; }.bind(t));
-t.constraints.push(insideBox);
+// let t = new Box(vec2(1, 1), vec2(0.15, 0.15), 1, vec2(0, 0), '#007bff', '#004995', .03)
+// t.listeners.push(function () { paused.textContent = `x:${t.pos.x.toFixed(2)}, y:${t.pos.y.toFixed(2)}`; }.bind(t));
+// t.constraints.push(insideBox);
 // realsvg.getAttribute('viewBox').split(' ').map(x => parseFloat(x))
 // function k() {
 //   sys.hor_vert_selector.value = !sys.hor_vert_selector.value;

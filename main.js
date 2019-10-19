@@ -1213,26 +1213,6 @@ class System {
           }
         }.bind(this)
       );
-      this.hor_vert_selector = new RadioGroup();
-      this.hor_vert_selector.addRadio(vec2(7.3, 1.05), 1.2, true, '');
-      this.hor_vert_selector.addRadio(vec2(7.3, 0.65), 1.2, false, '');
-      this.hor_vert_selector.value = vertical;
-      this.hor_vert_selector.addListener(
-        function () {
-          this.vertical = this.hor_vert_selector.value;
-          this.create(this.n_masses, this.vertical, false);
-        }.bind(this)
-      );
-
-      let vert = document.createElementNS(nssvg, 'path');
-      vert.setAttribute('d', 'M 7.5 4.95 m .035 -0.01 l 0 -.05 l -.07 0 l .095 -.1 l .095 .1 l -.07 0 l 0 .10 l .07 0 l -.095 .1 l -.095 -.1 l .07 0 l 0 -.05');
-      vert.setAttribute('fill', '#333');
-      svg.appendChild(vert);
-
-      let horz = document.createElementNS(nssvg, 'path');
-      horz.setAttribute('d', 'M 7.5 5.35 m .035 -0.03 l .10 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.10 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05');
-      horz.setAttribute('fill', '#333');
-      svg.appendChild(horz);
 
       this.show_phases = false;
       this.show_controls = true;
@@ -1248,7 +1228,7 @@ class System {
     this.m = 20;
     this.vertical = vertical;
 
-    this.sim = new Simulation(this.n_masses, 0, 7.75, 2.7, 5.7, { type: this.vertical ? 'vertical' : 'horizontal' }, this.k);
+    this.sim = new Simulation(this.n_masses, 0, 7.8, 2.7, 5.7, { type: this.vertical ? 'vertical' : 'horizontal' }, this.k);
 
     this.masses_zero_positions = this.sim.get_zero_positions();
     for (let i = 0; i < this.n_masses; ++i) {
@@ -1363,9 +1343,25 @@ class System {
     this.show_springs_check.addListener(function () { show_springs = !show_springs; for (let s of this.sim.springs) s.update(); }.bind(this));
 
     this.show_phases_check = new CheckBox(vec2(8.3, 2.65), 1.4, 'Mostrar fases', this.show_phases, 1);
-    this.show_phases_check.addListener(function () { this.show_phases = this.show_phases_check.value; for (let s of this.phase_sliders) if (this.show_phases && this.show_controls) s.setVisible(); else s.setHidden(); }.bind(this));
+    this.show_phases_check.addListener(
+      function () {
+        this.show_phases = this.show_phases_check.value;
+        for (let s of this.phase_sliders) if (this.show_phases) {
+          s.setVisible();
+        } else {
+          s.setHidden();
+        }
+        if (this.show_phases) {
+          this.bound.setAttribute('height', 3.72);
+          this.phase_txt.setAttribute('visibility', 'visible');
+        } else {
+          this.bound.setAttribute('height', 2.8);
+          this.phase_txt.setAttribute('visibility', 'hidden');
+        }
+      }.bind(this)
+    );
 
-    let x_init = 0.95;
+    let x_init = 0.93;
     let x_avl = 7.6 - x_init;
 
     this.markers = [];
@@ -1382,14 +1378,14 @@ class System {
     // this.bound.setAttribute('x', x_init - .9);
     this.bound.setAttribute('y', height - 2.3);
     // this.bound.setAttribute('width', 7.8);
-    this.bound.setAttribute('width', x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.372 - 1.5);
-    this.bound.setAttribute('height', 2.8);
+    this.bound.setAttribute('width', x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.722 - 3.7);
+    this.bound.setAttribute('height', this.show_phases ? 3.72 : 2.8);
     this.bound.setAttribute('stroke', '#333');
     this.bound.setAttribute('stroke-width', .07);
     this.bound.setAttribute('fill', '#777');
     this.bound.setAttribute('fill-opacity', '.1');
     this.bound.setAttribute('pointer-events', 'none');
-    this.bound.setAttribute('rx', '.2');
+    this.bound.setAttribute('rx', '.15');
     svg.appendChild(this.bound);
     // this.bound.setAttribute('ry', '.3');
 
@@ -1397,27 +1393,29 @@ class System {
     this.controls_check = new CheckBox(vec2(x_init + x_avl / (this.n_masses + 1) - 1.23, 2.2), 1.4, '', this.show_controls, 1);
 
     this.no_controls = document.createElementNS(nssvg, 'text');
-    this.no_controls.setAttribute('x', x_init - .3);
+    this.no_controls.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - 1.1);
     this.no_controls.setAttribute('y', height - 2.0);
     this.no_controls.setAttribute('font-size', .2);
     this.no_controls.setAttribute('text-anchor', 'start');
     this.no_controls.setAttribute('alignment-baseline', 'middle');
-    this.no_controls.setAttribute('fill', "#888");
+    this.no_controls.setAttribute('fill', "#333");
     this.no_controls.textContent = 'Espectro no Modo Normal';
     svg.appendChild(this.no_controls);
-    
+
     this.controls = document.createElementNS(nssvg, 'g');
     svg.appendChild(this.controls);
     this.svg = svg;
     svg = this.controls;
-    
+
     this.controls_check.addListener(function () {
       this.show_controls = this.controls_check.value;
       if (this.show_controls) {
-        this.controls.setAttribute('visibility', 'visible');
+        this.bound.setAttribute('height', this.show_phases ? 3.72 : 2.8);
+        this.controls.setAttribute('display', 'initial');
         this.no_controls.setAttribute('visibility', 'hidden');
       } else {
-        this.controls.setAttribute('visibility', 'hidden');
+        this.bound.setAttribute('height', 0.6);
+        this.controls.setAttribute('display', 'none');
         this.no_controls.setAttribute('visibility', 'visible');
       }
     }.bind(this));
@@ -1425,18 +1423,69 @@ class System {
 
     this.normal_mode_txt = document.createElementNS(nssvg, 'text');
     // this.normal_mode_txt.setAttribute('x', x_init - .8);
-    this.normal_mode_txt.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - 1.4);
+    this.normal_mode_txt.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - .18);
     this.normal_mode_txt.setAttribute('y', height - 1.4);
     this.normal_mode_txt.setAttribute('font-size', .19);
-    this.normal_mode_txt.setAttribute('text-anchor', 'start');
+    this.normal_mode_txt.setAttribute('text-anchor', 'end');
     this.normal_mode_txt.setAttribute('alignment-baseline', 'middle');
     this.normal_mode_txt.setAttribute('fill', "#555");
     this.normal_mode_txt.textContent = 'Modo Normal';
     svg.appendChild(this.normal_mode_txt);
-    
+
+    this.ampl_txt = document.createElementNS(nssvg, 'text');
+    this.ampl_txt.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - .45);
+    this.ampl_txt.setAttribute('y', height - .65);
+    this.ampl_txt.setAttribute('font-size', .19);
+    this.ampl_txt.setAttribute('text-anchor', 'end');
+    this.ampl_txt.setAttribute('alignment-baseline', 'middle');
+    this.ampl_txt.setAttribute('fill', "#555");
+    this.ampl_txt.textContent = 'Amplitude';
+    svg.appendChild(this.ampl_txt);
+
+    this.freq_txt = document.createElementNS(nssvg, 'text');
+    this.freq_txt.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - .4);
+    this.freq_txt.setAttribute('y', height + .25);
+    this.freq_txt.setAttribute('font-size', .19);
+    this.freq_txt.setAttribute('text-anchor', 'end');
+    this.freq_txt.setAttribute('alignment-baseline', 'middle');
+    this.freq_txt.setAttribute('fill', "#555");
+    this.freq_txt.textContent = 'Frequência';
+    svg.appendChild(this.freq_txt);
+
+    this.phase_txt = document.createElementNS(nssvg, 'text');
+    this.phase_txt.setAttribute('x', x_init + x_avl / (this.n_masses + 1) - .7);
+    this.phase_txt.setAttribute('y', height + .89);
+    this.phase_txt.setAttribute('font-size', .19);
+    this.phase_txt.setAttribute('text-anchor', 'end');
+    this.phase_txt.setAttribute('alignment-baseline', 'middle');
+    this.phase_txt.setAttribute('fill', "#555");
+    this.phase_txt.textContent = 'Fase';
+    svg.appendChild(this.phase_txt);
+
+    this.hor_vert_selector = new RadioGroup();
+    this.hor_vert_selector.addRadio(vec2(x_init + x_avl / (this.n_masses + 1) - 1.5 + x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.762 - 4.4, 1.05), 1.2, true, '');
+    this.hor_vert_selector.addRadio(vec2(x_init + x_avl / (this.n_masses + 1) - 1.5 + x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.762 - 4.4, 0.65), 1.2, false, '');
+    this.hor_vert_selector.value = vertical;
+    this.hor_vert_selector.addListener(
+      function () {
+        this.vertical = this.hor_vert_selector.value;
+        this.create(this.n_masses, this.vertical, false);
+      }.bind(this)
+    );
+
+    let vert = document.createElementNS(nssvg, 'path');
+    vert.setAttribute('d', `M ${.2 + x_init + x_avl / (this.n_masses + 1) - 1.5 + x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.762 - 4.4} 4.95 m .035 -0.01 l 0 -.05 l -.07 0 l .095 -.1 l .095 .1 l -.07 0 l 0 .10 l .07 0 l -.095 .1 l -.095 -.1 l .07 0 l 0 -.05`);
+    vert.setAttribute('fill', '#333');
+    svg.appendChild(vert);
+
+    let horz = document.createElementNS(nssvg, 'path');
+    horz.setAttribute('d', `M ${.2 + x_init + x_avl / (this.n_masses + 1) - 1.5 + x_init + x_avl / (this.n_masses + 1) * this.n_masses * 1.762 - 4.4} 5.35 m .03 -0.03 l .07 0 l 0 -.07 l .1 .095 l -.1 .095 l 0 -.07 l -.07 0 l 0 .07 l -.1 -.095 l .1 -.095 l 0 .05`);
+    horz.setAttribute('fill', '#333');
+    svg.appendChild(horz);
+
     for (let i = 0; i < this.n_masses; ++i) {
       let pos_x = x_init + x_avl / (this.n_masses + 1) * (i + 1);
-      let top_y = 1.8;
+      let top_y = 1.82;
 
       this.markers[i] = new WaveMarker(vec2(pos_x, top_y), .5, i + 1, 'blue', '#222', 0.02);
 
@@ -1463,7 +1512,7 @@ class System {
 
       let normal_freq = document.createElementNS(nssvg, 'text');
       normal_freq.setAttribute('x', pos_x);
-      normal_freq.setAttribute('y', height - (top_y - .4 - 1.2 - .2 - .3));
+      normal_freq.setAttribute('y', height - (top_y - .4 - 1.2 - .2 - .3 + .02));
       normal_freq.setAttribute('font-size', .2);
       normal_freq.setAttribute('text-anchor', 'middle');
       normal_freq.setAttribute('alignment-baseline', 'middle');
@@ -1471,7 +1520,7 @@ class System {
       normal_freq.textContent = `${(this.normal_frequencies[i] / Math.sqrt(this.k / this.m)).toFixed(2)}ω`;
       svg.appendChild(normal_freq);
 
-      this.phase_sliders[i] = new Slider(vec2(pos_x, top_y - .4 - 1.2 - .2 - .5 - .8), .8, -Math.PI, Math.PI, false, '', false, 1.1, false, this.restart ? 0 : this.initial_phases[i], false, .4);
+      this.phase_sliders[i] = new Slider(vec2(pos_x, top_y - .4 - 1.2 - .2 - .48 - .8), .8, -Math.PI, Math.PI, false, '', false, 1.1, false, this.restart ? 0 : this.initial_phases[i], false, .4);
       this.phase_sliders[i].txt.setAttribute('x', parseFloat(this.phase_sliders[i].txt.getAttribute('x')) + .10);
       this.phase_sliders[i].addListener(function () {
         if (!this.dragging) {
@@ -1485,38 +1534,38 @@ class System {
 
     svg = this.svg;
 
-    this.waves_check = new CheckBox(vec2(8.9, 2.4), 1.4, 'escrever algo', this.show_waves, 1);
+    this.waves_check = new CheckBox(vec2(8.235, 2.14), 1.4, 'Normal Modes', this.show_waves, 1);
 
-    this.no_waves = document.createElementNS(nssvg, 'text');
-    this.no_waves.setAttribute('x', 8.9);
-    this.no_waves.setAttribute('y', height - 2.4);
-    this.no_waves.setAttribute('font-size', .12);
-    this.no_waves.setAttribute('text-anchor', 'middle');
-    this.no_waves.setAttribute('alignment-baseline', 'middle');
-    this.no_waves.setAttribute('fill', "#888");
-    this.no_waves.textContent = 'texto espectro';
-    svg.appendChild(this.no_waves);
+    // this.no_waves = document.createElementNS(nssvg, 'text');
+    // this.no_waves.setAttribute('x', 8.9);
+    // this.no_waves.setAttribute('y', height - 2.4);
+    // this.no_waves.setAttribute('font-size', .12);
+    // this.no_waves.setAttribute('text-anchor', 'middle');
+    // this.no_waves.setAttribute('alignment-baseline', 'middle');
+    // this.no_waves.setAttribute('fill', "#888");
+    // this.no_waves.textContent = 'texto espectro';
+    // svg.appendChild(this.no_waves);
 
     this.waves_container = document.createElementNS(nssvg, 'g');
     svg.appendChild(this.waves_container);
     this.svg = svg;
     svg = this.waves_container;
-    
+
     this.waves_check.addListener(function () {
       this.show_waves = this.waves_check.value;
       if (this.show_waves) {
         this.waves_container.setAttribute('visibility', 'visible');
-        this.no_waves.setAttribute('visibility', 'hidden');
+        // this.no_waves.setAttribute('visibility', 'hidden');
       } else {
         this.waves_container.setAttribute('visibility', 'hidden');
-        this.no_waves.setAttribute('visibility', 'visible');
+        // this.no_waves.setAttribute('visibility', 'visible');
       }
     }.bind(this));
 
     this.waves_check.listeners[0]();
 
     for (let i = 0; i < this.n_masses; ++i) {
-      let top_y = 1.9;
+      let top_y = 1.54;
       let pos_x = 8.9;
 
       let wave_n = document.createElementNS(nssvg, 'text');
@@ -1552,6 +1601,7 @@ class System {
 
     if (this.show_phases === false) {
       for (let s of this.phase_sliders) s.setHidden();
+      this.phase_txt.setAttribute('visibility', 'hidden');
     }
     this.move_masses_to_the_correct_place();
 

@@ -1351,12 +1351,20 @@ class System {
         } else {
           s.setHidden();
         }
-        if (this.show_phases) {
-          this.bound.setAttribute('height', 3.72);
-          this.phase_txt.setAttribute('visibility', 'visible');
+        if (this.show_controls) {
+          if (this.show_phases) {
+            this.bound.setAttribute('height', 3.72);
+            this.phase_txt.setAttribute('visibility', 'visible');
+          } else {
+            this.bound.setAttribute('height', 2.8);
+            this.phase_txt.setAttribute('visibility', 'hidden');
         } else {
-          this.bound.setAttribute('height', 2.8);
-          this.phase_txt.setAttribute('visibility', 'hidden');
+          if (this.show_phases) {
+            this.bound.setAttribute('height', .6);
+            this.phase_txt.setAttribute('visibility', 'visible');
+          } else {
+            this.bound.setAttribute('height', .6);
+            this.phase_txt.setAttribute('visibility', 'hidden');
         }
       }.bind(this)
     );

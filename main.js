@@ -1358,6 +1358,7 @@ class System {
           } else {
             this.bound.setAttribute('height', 2.8);
             this.phase_txt.setAttribute('visibility', 'hidden');
+          }
         } else {
           if (this.show_phases) {
             this.bound.setAttribute('height', .6);
@@ -1365,6 +1366,7 @@ class System {
           } else {
             this.bound.setAttribute('height', .6);
             this.phase_txt.setAttribute('visibility', 'hidden');
+          }
         }
       }.bind(this)
     );
